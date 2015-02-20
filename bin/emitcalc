@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+"""emitcalc: computes
+
+Example calls:
+ > ./bin/emitcalc ....
+"""
+
+__author__      = "Joel Dubowy"
+__copyright__   = "Copyright 2014, AirFire, PNW, USFS"
+
+from pyairfire import scripting
+
+# from emitcalc import ...
+
+if __name__ == "__main__":
+    scripting.utils.exit_with_msg(" *** NOT IMPLEMENTED ***", prefix="")
