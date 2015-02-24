@@ -38,8 +38,8 @@ class EmissionsCalculator(object):
         "1000-hr fuels rotten": 'woody_rsc',
         "10k+-hr fuels rotten": 'woody_rsc',
         "10k+-hr fuels sound": 'woody_rsc',
-        C_wood_+S10k_R: 'woody_rsc',
-        C_wood_+R10k_R: 'woody_rsc',
+        "10000-hr fuels rotten": 'woody_rsc',
+        "-hr fuels sound": 'woody_rsc',
         "stumps rotten": 'woody_rsc',
         "stumps lightered": 'woody_rsc',
         "duff lower": 'duff_rsc',
@@ -48,16 +48,7 @@ class EmissionsCalculator(object):
         "squirrel middens": 'duff_rsc'
     }
 
-    CATEGORIES = [
-        "litter-lichen-moss",
-        "nonwoody",
-        "shrub",
-        "ground fuels",
-        "woody fuels",
-        "canopy"
-    ]
-
-    def calculate(ef_lookup_id, consumption_dict, is_rx):
+    def calculate(self, ef_lookup_id, consumption_dict, is_rx):
         """Calculates emissions given consume output
 
         Arguments
@@ -120,29 +111,38 @@ class EmissionsCalculator(object):
                     "midstory": { ... },
                     "snags class 1 no foliage": { ... }
                 }
+                "summary": {
+                    "litter-lichen-moss": { ...},
+                    "nonwoody": { ... },
+                    "shrub": { ... },
+                    "woody fuels": { ...},
+                    "ground fuels": { ... },
+                    "canopy": { ... },
+                    "total": { ... }
+                }
             }
 
         where each inner-most dict, { ... }, is of the form:
 
             {
-                "smoldering": [0.14949327591400063],
-                "total": [1.4949327591400063],
-                "flaming": [1.3454394832260057],
-                "residual": [0.0]
+                "smoldering": 0.14949327591400063,
+                "total": 1.4949327591400063,
+                "flaming": 1.3454394832260057,
+                "residual": 0.0
             }
 
         """
         # TODO: make more fault tolerant
         flaming_smoldering_key = 'flame_smold_rx' if is_rx else 'flame_smold_wf'
-        emissions = defaultdict()
-        efs = ef_lookup[ef_lookup_id]
-        for category in self.CATEGORIES:
-            for sub_category, sc_dict in consumption_dict[category].items():
+        emissions = defaultdict(lambda: defaultdict( lambda: dict()))
+        efs = self.ef_lookup[ef_lookup_id]
+        for category, c_dict in consumption_dict.items():
+            for sub_category, sc_dict in c_dict.items():
                 for species, ef in efs[flaming_smoldering_key]:
-                    emissions[species] += ef * sc_dict['flaming']
-                    emissions[species] += ef * sc_dict['smoldering']
+                    emissions[category][sub_category]['flaming'][species] = ef * sc_dict['flaming'][species]
+                    emissions[category][sub_category]['smoldering'][species] = ef * sc_dict['smoldering'][species]
                 rsc_key = RSC_KEYS.get(sub_category)
                 if rsc_key:
                     for species, ef in efs[rsc_key]:
-                        emissions[species] += ef * sc_dict['residual']
+                        emissions[category][sub_category][species] = ef * sc_dict['residual']
         return dict(emissions)
