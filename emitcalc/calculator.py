@@ -8,6 +8,19 @@ __all__ = [
 ]
 
 class EmissionsCalculator(object):
+    """Emissions calculator
+
+    TODO:
+     - rather than pass in ef_lookup to the constructor, just pass the
+        looked-up set of emissions factors to calculate, so that calculate'
+        signature would become the following:
+
+            calculate(self, ef_dict, consumption_dict, is_rx)
+
+        where ef_dict would be a dict containing the FCCS/cover-type specific
+        set of EFs
+    """
+
     def __init__(self, ef_lookup):
         """EmissionsCalculator constructor
 
@@ -25,7 +38,6 @@ class EmissionsCalculator(object):
                 'woody_rsc': {...},
                 'duff_rsc': {...}
             }
-
         """
         self.ef_lookup = ef_lookup
 
