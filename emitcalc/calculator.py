@@ -134,15 +134,15 @@ class EmissionsCalculator(object):
         """
         # TODO: make more fault tolerant
         flaming_smoldering_key = 'flame_smold_rx' if is_rx else 'flame_smold_wf'
-        emissions = defaultdict(lambda: defaultdict( lambda: dict()))
+        emissions = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: dict())))
         efs = self.ef_lookup[ef_lookup_id]
         for category, c_dict in consumption_dict.items():
             for sub_category, sc_dict in c_dict.items():
-                for species, ef in efs[flaming_smoldering_key]:
-                    emissions[category][sub_category]['flaming'][species] = ef * sc_dict['flaming'][species]
-                    emissions[category][sub_category]['smoldering'][species] = ef * sc_dict['smoldering'][species]
-                rsc_key = RSC_KEYS.get(sub_category)
+                for species, ef in efs[flaming_smoldering_key].items():
+                    emissions[category][sub_category]['flaming'][species] = ef * sc_dict['flaming']
+                    emissions[category][sub_category]['smoldering'][species] = ef * sc_dict['smoldering']
+                rsc_key = self.RSC_KEYS.get(sub_category)
                 if rsc_key:
-                    for species, ef in efs[rsc_key]:
+                    for species, ef in efs[rsc_key].items():
                         emissions[category][sub_category][species] = ef * sc_dict['residual']
         return dict(emissions)
