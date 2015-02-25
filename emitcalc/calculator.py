@@ -8,24 +8,16 @@ __all__ = [
 ]
 
 class EmissionsCalculator(object):
-    """Emissions calculator
 
-    TODO:
-     - rather than pass in ef_lookup to the constructor, just pass the
-        looked-up set of emissions factors to calculate, so that calculate'
-        signature would become the following:
-
-            calculate(self, ef_dict, consumption_dict, is_rx)
-
-        where ef_dict would be a dict containing the FCCS/cover-type specific
-        set of EFs
-    """
-
-    def __init__(self, ef_lookup):
+    def __init__(self, ef_lookup, **options):
         """EmissionsCalculator constructor
 
         Arguments:
          - ef_lookup - ef look-up dict or object (see note below)
+
+        Options:
+         - silent_fail - if any emissions calculations fails, or if subset of
+           data is invalid, simply skip a exclude related emissions from output
 
         Note:  ef_lookup can be a simple dict or something like an instance
         of fccs2ef.lookup.Fccs2Ef.  It just needs to support __getitem___, and
@@ -39,7 +31,8 @@ class EmissionsCalculator(object):
                 'duff_rsc': {...}
             }
         """
-        self.ef_lookup = ef_lookup
+        self._ef_lookup = ef_lookup
+        self._options = options
 
 
     # TODO: check these!!!
@@ -60,18 +53,16 @@ class EmissionsCalculator(object):
         "squirrel middens": 'duff_rsc'
     }
 
-    def calculate(self, ef_lookup_id, consumption_dict, is_rx):
+    def calculate(self, ef_lookup_ids, consumption_dict, is_rx):
         """Calculates emissions given consume output
 
         Arguments
-         - ef_lookup_id -- this could be either FCCS id or FERA cover type id,
+         - ef_lookup_ids -- array of either FCCS ids or FERA cover type ids,
             depending on the ef_lookup object passed to the constructor
          - consumption_dict -- dictionary of consume output  (see note below)
          - is_rx -- is a prescribed burn, as opposed to being a wild fire
 
         Note: consumption_dict is expected to be of the following form:
-
-        # TODO: modify this form, mostly using different keys ???
 
             {
                 "litter-lichen-moss": {
@@ -146,22 +137,42 @@ class EmissionsCalculator(object):
         """
         # TODO: make more fault tolerant
         flaming_smoldering_key = 'flame_smold_rx' if is_rx else 'flame_smold_wf'
+
         emissions = {}
-        efs = self.ef_lookup[ef_lookup_id]
+        ef_sets = [self._ef_lookup[eid] for eid in ef_lookup_ids]
+        # Determine species set accross each ef set for each of the combustion
+        # phase groupings.  If species sets differ,
+        species_by_ef_group = {
+            flaming_smoldering_key: set(reduce(lambda a,b: a+b, [efs[flaming_smoldering_key].keys() for efs in ef_sets])),
+            'woody_rsc': set(reduce(lambda a,b: a+b, [efs['woody_rsc'].keys() for efs in ef_sets])),
+            'duff_rsc': set(reduce(lambda a,b: a+b, [efs['duff_rsc'].keys() for efs in ef_sets]))
+        }
+        n_ef_sets = len(ef_sets)
+
         for category, c_dict in consumption_dict.items():
             emissions[category] = {}
             for sub_category, sc_dict in c_dict.items():
+                if not self._options.get('silent_fail'):
+                    if 1 != len(set([n_ef_sets] + [len(sc_dict[e]) for e in 'flaming', 'smoldering', 'residual'])):
+                        raise ValueError(self.ERROR_MESSAGES['DATA_LENGTH_MISMATCH'])
                 emissions[category][sub_category] = {
-                    'flaming': {},
-                    'smoldering': {}
+                    'flaming': dict([(e, [None] * n_ef_sets) for e in species_by_ef_group[flaming_smoldering_key]]),
+                    'smoldering': dict([(e, [None] * n_ef_sets) for e in species_by_ef_group[flaming_smoldering_key]])
                 }
-                for species, ef in efs[flaming_smoldering_key].items():
-                    emissions[category][sub_category]['flaming'][species] = ef * sc_dict['flaming']
-                    emissions[category][sub_category]['smoldering'][species] = ef * sc_dict['smoldering']
                 rsc_key = self.RSC_KEYS.get(sub_category)
                 if rsc_key:
-                    emissions[category][sub_category].update(residual={})
-                    for species, ef in efs[rsc_key].items():
-                        emissions[category][sub_category]['residual'][species] = ef * sc_dict['residual']
+                    emissions[category][sub_category]['residual'] = dict([(e, [None] * n_ef_sets) for e in species_by_ef_group[rsc_key]]),
 
-        return dict(emissions)
+                for i in xrange(len(ef_sets)):
+                    for species, ef in ef_sets[i][flaming_smoldering_key].items():
+                        emissions[category][sub_category]['flaming'][species][i] = ef * sc_dict['flaming'][i]
+                        emissions[category][sub_category]['smoldering'][species][i] = ef * sc_dict['smoldering'][i]
+                    if rsc_key:
+                        for species, ef in ef_sets[i][rsc_key].items():
+                            emissions[category][sub_category]['residual'][species][i] = ef * sc_dict['residual'][i]
+
+        return emissions
+
+    ERROR_MESSAGES = {
+        "Number of combustion values doesn't match number of fuelbeds / cover types"
+    }
