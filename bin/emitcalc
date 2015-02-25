@@ -3,15 +3,78 @@
 """emitcalc: computes
 
 Example calls:
- > ./bin/emitcalc ....
+ > ./bin/emitcalc 1 10 -i ./test/data/truncated-consume-output.json
 """
 
 __author__      = "Joel Dubowy"
 __copyright__   = "Copyright 2014, AirFire, PNW, USFS"
 
+import json
+import sys
+import traceback
+
 from pyairfire import scripting
 
-# from emitcalc import ...
+from emitcalc.calculator import EmissionsCalculator
+from fccs2ef.lookup import Fccs2Ef
+
+# Note: though some argue that all required parameters should be specified as
+# positional arguments, I prefer using 'options' flags, even though this
+# means that there are required 'options', which is oxymoronic.
+
+REQUIRED_OPTIONS = []
+
+OPTIONAL_OPTIONS = [
+    {
+        'short': '-r',
+        'long': '--is-rx',
+        'dest': 'is_rx',
+        'help': 'is an rx burn',
+        'action': "store_true",
+        'default': False
+    },
+    {
+        'short': '-i',
+        'long': '--input-file',
+        'dest': 'input_file',
+        'help': 'input file comtaining JSON formatted fire data',
+        'action': "store",
+        'default': None
+    },
+    {
+        'short': '-o',
+        'long': '--output-file',
+        'dest': 'output_file',
+        'help': 'output file comtaining JSON formatted fire data',
+        'action': "store",
+        'default': None
+    }
+]
+
+def _stream(file_name, flag): #, do_strip_newlines):
+    if file_name:
+        return open(file_name, flag)
+    else:
+        if flag == 'r':
+            return sys.stdin
+        else:
+            return sys.stdout
+
 
 if __name__ == "__main__":
-    scripting.utils.exit_with_msg(" *** NOT IMPLEMENTED ***", prefix="")
+    parser, options, fccs_ids = scripting.options.parse_options(REQUIRED_OPTIONS,
+        OPTIONAL_OPTIONS, usage="usage: %prog [options] <fccs_id>[,<fccs_id>[,...]]")
+
+    #scripting.options.check_required_options(options, REQUIRED_OPTIONS, parser)
+    scripting.options.configure_logging_from_options(options, parser)
+    scripting.options.output_options(options)
+
+    try:
+        data = json.loads(''.join([d for d in _stream(options.input_file, 'r')]))
+        calculator = EmissionsCalculator(Fccs2Ef())
+        emissions = calculator.calculate(fccs_ids, data, options.is_rx)
+        _stream(options.output_file, 'w').write(json.dumps(emissions))
+
+    except Exception, e:
+        print traceback.format_exc()
+        scripting.utils.exit_with_msg(e.message)
