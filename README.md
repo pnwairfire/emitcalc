@@ -292,12 +292,26 @@ following example illustrates this:
                     "residual": [0.0, 0.0]
                 }
             },
+            "ground fuels": {
+                "basal accumulations": {
+                    "smoldering": [0.14949327591400063, 0.2],
+                    "total": [1.4949327591400063, 1.34],
+                    "flaming": [1.3454394832260057, 1.14],
+                    "residual": [1.12, 0.32]
+                }
+            },
             "summary": {
                 "litter-lichen-moss": {
                     "smoldering": [0.14949327591400063, 0.2],
                     "total": [1.4949327591400063, 1.34],
                     "flaming": [1.3454394832260057, 1.14],
                     "residual": [0.0, 0.0]
+                },
+                "ground fuels": {
+                    "smoldering": [0.14949327591400063, 0.2],
+                    "total": [1.4949327591400063, 1.34],
+                    "flaming": [1.3454394832260057, 1.14],
+                    "residual": [1.12, 0.32]
                 }
             }
         }
@@ -319,6 +333,24 @@ following example illustrates this:
     >>> calculator = EmissionsCalculator(look_up)
     >>> calculator.calculate(['13','130'], consume_output, True)
     {
+        'ground fuels': {
+            'basal accumulations': {
+                'flaming': {
+                    'C02': [188.67097873278277, None],
+                    'CO': [None, 11.399999999999999],
+                    'PM2.5': [20.450680145035285, None]
+                },
+                'residual': {
+                    'C02': [5.096, None],
+                    'CO': [None, 38.4]
+                },
+                'smoldering': {
+                    'C02': [20.963442081420308, None],
+                    'CO': [None, 2.0],
+                    'PM2.5': [2.2722977938928097, None]
+                }
+            }
+        },
         'litter-lichen-moss': {
             'litter': {
                 'flaming': {
@@ -334,6 +366,18 @@ following example illustrates this:
             }
         },
         'summary': {
+            'ground fuels': {
+                'flaming': {
+                    'C02': [188.67097873278277, None],
+                    'CO': [None, 11.399999999999999],
+                    'PM2.5': [20.450680145035285, None]
+                },
+                'smoldering': {
+                    'C02': [20.963442081420308, None],
+                    'CO': [None, 2.0],
+                    'PM2.5': [2.2722977938928097, None]
+                }
+            },
             'litter-lichen-moss': {
                 'flaming': {
                     'C02': [188.67097873278277, None],
