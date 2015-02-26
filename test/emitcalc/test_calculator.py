@@ -66,6 +66,9 @@ class TestEmissionsCalculator:
                     "total": [1.4949327591400063, 1.34],
                     "flaming": [1.3454394832260057, 1.14],
                     "residual": [0.0, 0.0]
+                },
+                "blah": { # <-- Missing 'flaming' and 'smoldering'
+                    "residual": [0.0, 0.0]
                 }
             }
         }
@@ -74,8 +77,18 @@ class TestEmissionsCalculator:
                 consume_output, True)
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
         emissions = calculator.calculate(['13','130'], consume_output, True)
-        assert set(emissions.keys()) == {"ground fuels"}  # <-- "litter-lichen-moss" should have been skipped
+        assert 0 == len(emissions["litter-lichen-moss"].keys())  # <-- "litter" should have been skipped
+        assert 1 == len(emissions["ground fuels"].keys())  # <-- "blah" should have been skipped
         # TODO: assert values are correct
+        # expected = {
+        #     "litter-lichen-moss": {},
+        #     "ground fuels": {
+        #         "basal accumulations": {
+        #             # TODO: fill this in
+        #         }
+        #     }
+        # }
+        # assert expected == emissions
 
     def test_differing_number_of_consumption_values(self):
         consume_output = {
@@ -93,17 +106,41 @@ class TestEmissionsCalculator:
                     "total": [1.4949327591400063, 1.34],
                     "flaming": [1.3454394832260057, 1.14],
                     "residual": [0.0, 0.0]
+                },
+                "blah": {
+                    "smoldering": [0.2],  # <-- Only has one value
+                    "total": [1.1, 1.34],
+                    "flaming": [1.3, 1.14],
+                    "residual": [0.0, 0.0]
                 }
             }
         }
-        pass
+        with raises(ValueError) as e:
+             EmissionsCalculator(LOOK_UP).calculate(['13','130'],
+                consume_output, True)
+        calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
+        emissions = calculator.calculate(['13','130'], consume_output, True)
+        assert 0 == len(emissions["litter-lichen-moss"].keys())  # <-- "litter" should have been skipped
+        assert 1 == len(emissions["ground fuels"].keys())  # <-- "blah" should have been skipped
+        # TODO: assert values are correct
+        # expected = {
+        #     "litter-lichen-moss": {},
+        #     "ground fuels": {
+        #         "basal accumulations": {
+        #             # TODO: fill this in
+        #         }
+        #     }
+        # }
+        # assert expected == emissions
 
     def test_basic_one_fuel_bed(self):
-
+        # TODO: implement
         pass
 
     def test_basic_two_fuel_beds(self):
+        # TODO: implement
         pass
 
     def test_varying_chemical_species_two_fuel_beds(self):
+        # TODO: implement
         pass
