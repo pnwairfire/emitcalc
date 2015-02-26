@@ -1,6 +1,7 @@
 __author__      = "Joel Dubowy"
 __copyright__   = "Copyright 2014, AirFire, PNW, USFS"
 
+import logging
 from collections import defaultdict
 
 __all__ = [
