@@ -185,7 +185,7 @@ class EmissionsCalculator(object):
                 e_sc_dict = self._initialize_emissions_sub_category_dict(
                     species_by_ef_group, flaming_smoldering_key, rsc_key, num_fuelbeds)
 
-                for i in xrange(len(ef_sets)):
+                for i in xrange(num_fuelbeds):
                     for species, ef in ef_sets[i][flaming_smoldering_key].items():
                         e_sc_dict['flaming'][species][i] = ef * sc_dict['flaming'][i]
                         e_sc_dict['smoldering'][species][i] = ef * sc_dict['smoldering'][i]
