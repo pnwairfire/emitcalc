@@ -152,40 +152,16 @@ or you could use a dict (in this case, using with cover type ids as the keys):
     >>> from emitcalc.calculator import EmissionsCalculator
     >>> look_up = {
             '13': {
-                'flame_smold_wf': {
-                    'C02': 143.23,
-                    'CO': 14.0
-                },
-                'flame_smold_rx': {
-                    'C02': 140.23,
-                    'CO': 13.0
-                },
-                'woody_rsc': {
-                    'C02': 4.44,
-                    'CO': 140.0
-                },
-                'duff_rsc': {
-                    'C02': 4.55,
-                    'CO': 140.0
-                }
+                'flame_smold_wf': {'C02': 143.23,'CO': 14.0},
+                'flame_smold_rx': {'C02': 140.23,'CO': 13.0},
+                'woody_rsc': {'C02': 4.44,'CO': 140.0},
+                'duff_rsc': {'C02': 4.55,'CO': 140.0}
             },
             '130': {
-                'flame_smold_wf': {
-                    'C02': 123.23,
-                    'CO': 12.0
-                },
-                'flame_smold_rx': {
-                    'C02': 120.23,
-                    'CO': 10.0
-                },
-                'woody_rsc': {
-                    'C02': 3.23,
-                    'CO': 120.0
-                },
-                'duff_rsc': {
-                    'C02': 3.23,
-                    'CO': 120.0
-                }
+                'flame_smold_wf': {'C02': 123.23,'CO': 12.0},
+                'flame_smold_rx': {'C02': 120.23,'CO': 10.0},
+                'woody_rsc': {'C02': 3.23,'CO': 120.0},
+                'duff_rsc': {'C02': 3.23,'CO': 120.0}
             }
         }
     >>> calculator = EmissionsCalculator(look_up)
@@ -328,38 +304,47 @@ following example illustrates this:
     >>> from emitcalc.calculator import EmissionsCalculator
     >>> look_up = {
             '13': {
-                'flame_smold_wf': {
-                    'CO': 14.0,
-                    'PM2.5': 15.2
-                },
-                'flame_smold_rx': {
-                    'C02': 140.23
-                },
-                'woody_rsc': {
-                    'CO': 140.0,
-                    'NM': 23.0
-                },
-                'duff_rsc': {
-                    'C02': 4.55
-                }
+                'flame_smold_wf': {'CO': 14.0,'PM10': 15.2},
+                'flame_smold_rx': {'C02': 140.23,'PM2.5': 15.2},
+                'woody_rsc': {'CO': 140.0,'NM': 23.0},
+                'duff_rsc': {'C02': 4.55}
             },
             '130': {
-                'flame_smold_wf': {
-                    'C02': 123.23
-                },
-                'flame_smold_rx': {
-                    'CO': 10.0
-                },
-                'woody_rsc': {
-                    'C02': 3.23,
-                    'FDF': 2.32
-                },
-                'duff_rsc': {
-                    'CO': 120.0
-                }
+                'flame_smold_wf': {'C02': 123.23},
+                'flame_smold_rx': {'CO': 10.0},
+                'woody_rsc': {'C02': 3.23,'FDF': 2.32},
+                'duff_rsc': {'CO': 120.0}
             }
         }
     >>> calculator = EmissionsCalculator(look_up)
     >>> calculator.calculate(['13','130'], consume_output, True)
-
-    TODO: FILL THIS IN
+    {
+        'litter-lichen-moss': {
+            'litter': {
+                'flaming': {
+                    'C02': [188.67097873278277, None],
+                    'CO': [None, 1.4000000000000001],
+                    'PM2.5': [20.450680145035285, None]
+                },
+                'smoldering': {
+                    'C02': [20.963442081420308, None],
+                    'CO': [None, 2.0],
+                    'PM2.5': [2.2722977938928097, None]
+                }
+            }
+        },
+        'summary': {
+            'litter-lichen-moss': {
+                'flaming': {
+                    'C02': [188.67097873278277, None],
+                    'CO': [None, 11.399999999999999],
+                    'PM2.5': [20.450680145035285, None]
+                },
+                'smoldering': {
+                    'C02': [20.963442081420308, None],
+                    'CO': [None, 2.0],
+                    'PM2.5': [2.2722977938928097, None]
+                }
+            }
+        }
+    }
