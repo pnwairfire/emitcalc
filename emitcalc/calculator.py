@@ -35,6 +35,12 @@ class EmissionsCalculator(object):
         self._ef_lookup = ef_lookup
         self._options = options
 
+    ERROR_MESSAGES = {
+        "EF_LOOKUP_FAILURE": "Failed to look up emissions factors for %s",
+        "MISSING_KEYS": "Missing keys in %s %s: %s",
+        'DATA_LENGTH_MISMATCH': "Number of combustion values doesn't match "
+            "number of fuelbeds / cover types"
+    }
 
     # TODO: check these!!!
     # TODO: expect different keys???
@@ -154,7 +160,11 @@ class EmissionsCalculator(object):
         flaming_smoldering_key = 'flame_smold_rx' if is_rx else 'flame_smold_wf'
 
         emissions = {}
-        ef_sets = [self._ef_lookup[eid] for eid in ef_lookup_ids]
+        try:
+            ef_sets = [self._ef_lookup[eid] for eid in ef_lookup_ids]
+        except KeyError, e:
+            raise KeyError(self.ERROR_MESSAGES["EF_LOOKUP_FAILURE"] % (e))
+
         species_by_ef_group = self._species_sets_by_ef_group(ef_sets,
             flaming_smoldering_key)
         num_fuelbeds = len(ef_sets)
@@ -204,12 +214,6 @@ class EmissionsCalculator(object):
         return set(reduce(lambda a,b: a+b, [efs[ef_group_key].keys() for efs in ef_sets]))
 
     COMBUSTION_PHASES = set(['flaming', 'smoldering', 'residual'])
-
-    ERROR_MESSAGES = {
-        "MISSING_KEYS": "Missing keys in %s %s: %s",
-        'DATA_LENGTH_MISMATCH': "Number of combustion values doesn't match "
-            "number of fuelbeds / cover types"
-    }
 
     def _is_valid_sub_category_dict(self, category, sub_category, sc_dict,
             num_fuelbeds):
