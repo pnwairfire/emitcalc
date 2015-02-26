@@ -10,6 +10,7 @@ __author__      = "Joel Dubowy"
 __copyright__   = "Copyright 2014, AirFire, PNW, USFS"
 
 import json
+import logging
 import sys
 import traceback
 
@@ -76,5 +77,5 @@ if __name__ == "__main__":
         _stream(options.output_file, 'w').write(json.dumps(emissions))
 
     except Exception, e:
-        print traceback.format_exc()
+        logging.info(traceback.format_exc())
         scripting.utils.exit_with_msg(e.message)
