@@ -10,7 +10,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='emitcalc',
-    version='0.1.0',
+    version='0.1.1',
     author='Joel Dubowy',
     author_email='jdubowy@gmail.com',
     packages=[
@@ -21,7 +21,7 @@ setup(
     ],
     package_data={
     },
-    url='git@bitbucket.org:fera/airfire-emissions-calculator.git',
+    url='git@bitbucket.org:fera/airfire-emitcalc',
     description='Package providing a calculator for computing emissions from consume output.',
     install_requires=REQUIREMENTS,
 )
