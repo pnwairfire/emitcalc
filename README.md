@@ -333,19 +333,19 @@ following example illustrates this:
                     'PM2.5': 15.2
                 },
                 'flame_smold_rx': {
-                    'C02': 140.23,
+                    'C02': 140.23
                 },
                 'woody_rsc': {
                     'CO': 140.0,
                     'NM': 23.0
                 },
                 'duff_rsc': {
-                    'C02': 4.55,
+                    'C02': 4.55
                 }
             },
             '130': {
                 'flame_smold_wf': {
-                    'C02': 123.23,
+                    'C02': 123.23
                 },
                 'flame_smold_rx': {
                     'CO': 10.0
