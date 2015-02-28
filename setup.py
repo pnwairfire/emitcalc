@@ -10,7 +10,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='emitcalc',
-    version='0.1.1',
+    version='0.1.2',
     author='Joel Dubowy',
     author_email='jdubowy@gmail.com',
     packages=[
