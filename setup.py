@@ -21,7 +21,7 @@ setup(
     ],
     package_data={
     },
-    url='git@bitbucket.org:fera/airfire-emitcalc',
+    url='https://github.com/pnwairfire/emitcalc',
     description='Package providing a calculator for computing emissions from consume output.',
     install_requires=REQUIREMENTS,
 )

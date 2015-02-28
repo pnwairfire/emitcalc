@@ -35,9 +35,6 @@ See [pytest](http://pytest.org/latest/getting-started.html#getstarted) for more 
 
 ## Installing
 
-The repo is currently public. So, you don't need to be on the FERA bitbucket team
-to install from the repo.
-
 ### Installing With pip
 
 First, install pip:
@@ -46,7 +43,7 @@ First, install pip:
 
 Then, to install, for example, v0.1.0, use the following:
 
-    sudo pip install git+https://bitbucket.org/fera/airfire-emissions-calculator@v0.1.0
+    sudo pip install git+https://github.com/pnwairfire/emitcalc@v0.1.2
 
 If you get an error like
 
