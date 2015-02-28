@@ -183,8 +183,44 @@ class TestEmissionsCalculator:
         assert_results_are_approximately_equal(expected, emissions)
 
     def test_basic_one_fuel_bed(self):
-        # TODO: implement
-        pass
+        # 13's lookup
+        # {
+        #     'flame_smold_wf': {'CO2': 143.23,'CO': 14.0},
+        #     'flame_smold_rx': {'CO2': 140.23,'CO': 13.0},
+        #     'woody_rsc': {'CO2': 4.44,'CO': 140.0},
+        #     'duff_rsc': {'CO2': 4.55,'CO': 142.0}
+        # }
+        consume_output = {
+            "ground fuels": {
+                "basal accumulations": {
+                    "flaming": [1.1],
+                    "smoldering": [2.2],
+                    "residual": [3.3],
+                    "total": [6.6]
+                }
+            }
+        }
+        calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
+        emissions = calculator.calculate(['13'], consume_output, True)
+        expected = {
+            'ground fuels': {
+                'basal accumulations': {
+                    'flaming': {
+                        'CO2': [154.253],
+                        'CO': [14.3]
+                    },
+                    'smoldering': {
+                        'CO2': [308.506],
+                        'CO': [28.6]
+                    },
+                    'residual': {
+                        'CO2': [15.015],
+                        'CO': [468.6]
+                    }
+                }
+            }
+        }
+        assert_results_are_approximately_equal(expected, emissions)
 
     def test_basic_two_fuel_beds(self):
         # TODO: implement
