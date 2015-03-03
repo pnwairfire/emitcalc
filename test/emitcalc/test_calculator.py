@@ -6,32 +6,104 @@ from py.test import raises#, mark
 
 from emitcalc.calculator import EmissionsCalculator
 
+# Test CONSUME output
+
+BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT = {
+    "flaming": [1.345, 1.14],
+    "smoldering": [0.149, 0.2],
+    "residual": [2.0, 0.3],
+    "total": [1.4949, 1.34]
+}
+BASAL_ACCUMULATIONS_RX_13_CONSUME_OUT = dict([(k, v[:1]) for k,v in
+    BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT.items()])
+LITTER_LICHEN_MOSS_RX_13_130_CONSUME_OUT = {
+    "flaming": [1.3, 0.14],
+    "smoldering": [0.2, 0.12],
+    "residual": [1.12, 0.32],
+    "total": [1.2, 0.34]
+}
+
+# Test lookup dicts
+
 LOOK_UP = {
     '13': {
-        'flame_smold_wf': {'CO2': 143.23,'CO': 14.0},
-        'flame_smold_rx': {'CO2': 140.23,'CO': 13.0},
-        'woody_rsc': {'CO2': 4.44,'CO': 140.0},
-        'duff_rsc': {'CO2': 4.55,'CO': 140.0}
+        'flame_smold_wf': {'CO2': 143.23, 'CO': 14.0},
+        'flame_smold_rx': {'CO2': 140.23, 'CO': 13.0},
+        'woody_rsc': {'CO2': 4.44, 'CO': 140.0},
+        'duff_rsc': {'CO2': 4.55, 'CO': 140.0}
     },
     '130': {
-        'flame_smold_wf': {'CO2': 123.23,'CO': 12.0},
-        'flame_smold_rx': {'CO2': 120.23,'CO': 10.0},
-        'woody_rsc': {'CO2': 3.23,'CO': 120.0},
-        'duff_rsc': {'CO2': 3.23,'CO': 120.0}
+        'flame_smold_wf': {'CO2': 123.23, 'CO': 12.0},
+        'flame_smold_rx': {'CO2': 120.23, 'CO': 10.0},
+        'woody_rsc': {'CO2': 3.23, 'CO': 120.0},
+        'duff_rsc': {'CO2': 3.23, 'CO': 120.0}
     }
 }
 LOOK_UP_DIFFERING = {
     '13': {
-        'flame_smold_wf': {'CO': 14.0,'PM10': 15.2},
-        'flame_smold_rx': {'CO2': 140.23,'PM2.5': 15.2},
-        'woody_rsc': {'CO': 140.0,'NM': 23.0},
+        'flame_smold_wf': {'CO': 14.0, 'PM10': 15.2},
+        'flame_smold_rx': {'CO2': 140.23, 'PM2.5': 15.2},
+        'woody_rsc': {'CO': 140.0, 'NM': 23.0},
         'duff_rsc': {'CO2': 4.55}
     },
     '130': {
         'flame_smold_wf': {'CO2': 123.23},
         'flame_smold_rx': {'CO': 10.0},
-        'woody_rsc': {'CO2': 3.23,'FDF': 2.32},
+        'woody_rsc': {'CO2': 3.23, 'FDF': 2.32},
         'duff_rsc': {'CO': 120.0}
+    }
+}
+
+# Expected emissions
+# Note: These were hand-calculated from the consume output and expected
+# emissions listed above
+
+BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED = {
+    'flaming': {
+        'CO2': [188.60934999999998, 137.0622],
+        'CO': [17.485, 11.4]
+    },
+    'smoldering': {
+        'CO2': [20.89427, 24.046000000000003],
+        'CO': [1.9369999999999998, 2.0]
+    },
+    'residual': {
+        'CO2': [9.1, 0.969],
+        'CO': [280.0, 36.0]
+    }
+}
+BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED = dict([
+    (k, dict([(k2, v2[:1]) for k2,v2 in  v.items()]))
+        for k,v in BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED.items()
+])
+BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
+    'flaming': {
+        'CO2': [188.60934999999998, None],
+        'CO': [None, 11.4],
+        'PM2.5': [20.444, None]
+    },
+    'smoldering': {
+        'CO2': [20.89427, None],
+        'CO': [None, 2.0],
+        'PM2.5': [2.2647999999999997, None]
+    },
+    'residual': {
+        'CO2': [9.1, None],
+        'CO': [None, 36.0]
+    }
+}
+LITTER_LICHEN_MOSS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
+    'litter': {
+        'flaming': {
+            'CO2': [182.299, None],
+            'CO': [None, 1.4],
+            'PM2.5': [19.759999999999998, None]
+        },
+        'smoldering': {
+            'CO2': [28.046, None],
+            'CO': [None, 1.2],
+            'PM2.5': [3.04, None]
+        }
     }
 }
 
@@ -55,11 +127,17 @@ def assert_results_are_approximately_equal(expected, actual):
                     # emissions values
                     assert len(expected[c][sc][cp][s]) == len(actual[c][sc][cp][s])
                     for i in xrange(len(expected[c][sc][cp][s])):
-                        assert_approx_equal(
-                            expected[c][sc][cp][s][i],
-                            actual[c][sc][cp][s][i],
-                            significant=8  # arbitrarily chose 8
-                        )
+                        if expected[c][sc][cp][s][i] is None:
+                            assert None == actual[c][sc][cp][s][i]
+                        else:
+                            # first argument in assert_approx_equal is actual,
+                            # second is epected (it doesn't matter except that
+                            # error message will be misleading if order is reversed)
+                            assert_approx_equal(
+                                actual[c][sc][cp][s][i],
+                                expected[c][sc][cp][s][i],
+                                significant=8  # arbitrarily chose 8
+                            )
 
 
 
@@ -77,54 +155,36 @@ class TestEmissionsCalculator:
         }
         with raises(KeyError) as e:
             # No EFs for '13sdf'
-            EmissionsCalculator(LOOK_UP).calculate(['13sdf','130'],
+            EmissionsCalculator(LOOK_UP).calculate(['13sdf', '130'],
                 consume_output, True)
 
     def test_missing_combustion_phase_keys(self):
         consume_output = {
             "litter-lichen-moss": {
                 "litter": { # <-- Missing 'flaming'
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 0.34],
+                    "smoldering": [0.149, 0.2],
+                    "total": [1.4949, 0.34],
                     "residual": [0.0, 0.0]
                 }
             },
             "ground fuels": {
-                "basal accumulations": {
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 1.34],
-                    "flaming": [1.3454394832260057, 1.14],
-                    "residual": [2.0, 0.3]
-                },
+                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT,
                 "blah": { # <-- Missing 'flaming' and 'smoldering'
                     "residual": [0.0, 0.0]
                 }
             }
         }
         with raises(ValueError) as e:
-             EmissionsCalculator(LOOK_UP).calculate(['13','130'],
+             EmissionsCalculator(LOOK_UP).calculate(['13', '130'],
                 consume_output, True)
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
-        emissions = calculator.calculate(['13','130'], consume_output, True)
+        emissions = calculator.calculate(['13', '130'], consume_output, True)
         assert 0 == len(emissions["litter-lichen-moss"].keys())  # <-- "litter" should have been skipped
         assert 1 == len(emissions["ground fuels"].keys())  # <-- "blah" should have been skipped
         expected = {
             "litter-lichen-moss": {},
             'ground fuels': {
-                'basal accumulations': {
-                    'flaming': {
-                        'CO2': [188.67097873278277, 137.0622],
-                        'CO': [17.490713281938074, 11.399999999999999]
-                    },
-                    'smoldering': {
-                        'CO2': [20.963442081420308, 24.046000000000003],
-                        'CO': [1.9434125868820082, 2.0]
-                    },
-                    'residual': {
-                        'CO2': [9.1, 0.969],
-                        'CO': [280.0, 36.0]
-                    }
-                }
+                'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
         }
         assert_results_are_approximately_equal(expected, emissions)
@@ -140,12 +200,7 @@ class TestEmissionsCalculator:
                 }
             },
             "ground fuels": {
-                "basal accumulations": {
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 1.34],
-                    "flaming": [1.3454394832260057, 1.14],
-                    "residual": [0.0, 0.0]
-                },
+                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT,
                 "blah": {
                     "smoldering": [0.2],  # <-- Only has one value
                     "total": [1.1, 1.34],
@@ -155,131 +210,66 @@ class TestEmissionsCalculator:
             }
         }
         with raises(ValueError) as e:
-             EmissionsCalculator(LOOK_UP).calculate(['13','130'],
+             EmissionsCalculator(LOOK_UP).calculate(['13', '130'],
                 consume_output, True)
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
-        emissions = calculator.calculate(['13','130'], consume_output, True)
+        emissions = calculator.calculate(['13', '130'], consume_output, True)
         assert 0 == len(emissions["litter-lichen-moss"].keys())  # <-- "litter" should have been skipped
         assert 1 == len(emissions["ground fuels"].keys())  # <-- "blah" should have been skipped
         expected = {
             "litter-lichen-moss": {},
             'ground fuels': {
-                'basal accumulations': {
-                    'flaming': {
-                        'CO2': [188.67097873278277, 137.0622],
-                        'CO': [17.490713281938074, 11.399999999999999]
-                    },
-                    'smoldering': {
-                        'CO2': [20.963442081420308, 24.046000000000003],
-                        'CO': [1.9434125868820082, 2.0]
-                    },
-                    'residual': {
-                        'CO2': [9.1, 0.969],
-                        'CO': [280.0, 36.0]
-                    }
-                }
+                'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
         }
         assert_results_are_approximately_equal(expected, emissions)
 
     def test_basic_one_fuel_bed(self):
-        # 13's lookup
-        # {
-        #     'flame_smold_wf': {'CO2': 143.23,'CO': 14.0},
-        #     'flame_smold_rx': {'CO2': 140.23,'CO': 13.0},
-        #     'woody_rsc': {'CO2': 4.44,'CO': 140.0},
-        #     'duff_rsc': {'CO2': 4.55,'CO': 142.0}
-        # }
         consume_output = {
             "ground fuels": {
-                "basal accumulations": {
-                    "flaming": [1.1],
-                    "smoldering": [2.2],
-                    "residual": [3.3],
-                    "total": [6.6]
-                }
+                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_CONSUME_OUT
             }
         }
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
         emissions = calculator.calculate(['13'], consume_output, True)
         expected = {
             'ground fuels': {
-                'basal accumulations': {
-                    'flaming': {
-                        'CO2': [154.253],
-                        'CO': [14.3]
-                    },
-                    'smoldering': {
-                        'CO2': [308.506],
-                        'CO': [28.6]
-                    },
-                    'residual': {
-                        'CO2': [15.015],
-                        'CO': [468.6]
-                    }
-                }
+                'basal accumulations': BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
         }
         assert_results_are_approximately_equal(expected, emissions)
 
     def test_basic_two_fuel_beds(self):
-        # TODO: implement
-        pass
+        consume_output = {
+            "ground fuels": {
+                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT
+            }
+        }
+        calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
+        emissions = calculator.calculate(['13', '130'], consume_output, True)
+        expected = {
+            'ground fuels': {
+                'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+            }
+        }
+        assert_results_are_approximately_equal(expected, emissions)
 
     def test_varying_chemical_species_two_fuel_beds(self):
         consume_output = {
             "litter-lichen-moss": {
-                "litter": {
-                    "smoldering": [0.2, 0.12],  # <-- Only has one value
-                    "total": [1.4949327591400063, 0.34],
-                    "flaming": [1.3454394832260057, 0.14],
-                    "residual": [1.12, 0.32]
-                }
+                "litter": LITTER_LICHEN_MOSS_RX_13_130_CONSUME_OUT
             },
             "ground fuels": {
-                "basal accumulations": {
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 1.34],
-                    "flaming": [1.3454394832260057, 1.14],
-                    "residual": [1.12, 0.32]
-                }
+                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT
             }
         }
         calculator = EmissionsCalculator(LOOK_UP_DIFFERING)
-        emissions = calculator.calculate(['13','130'], consume_output, True)
+        emissions = calculator.calculate(['13', '130'], consume_output, True)
         # TODO: hand compute these values to make sure they're correct
         expected = {
             'ground fuels': {
-                'basal accumulations': {
-                    'flaming': {
-                        'CO2': [188.67097873278277, None],
-                        'CO': [None, 11.399999999999999],
-                        'PM2.5': [20.450680145035285, None]
-                    },
-                    'residual': {
-                        'CO2': [5.096, None],
-                        'CO': [None, 38.4]
-                    },
-                    'smoldering': {
-                        'CO2': [20.963442081420308, None],
-                        'CO': [None, 2.0],
-                        'PM2.5': [2.2722977938928097, None]
-                    }
-                }
+                'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED
             },
-            'litter-lichen-moss': {
-                'litter': {
-                    'flaming': {
-                        'CO2': [188.67097873278277, None],
-                        'CO': [None, 1.4000000000000001],
-                        'PM2.5': [20.450680145035285, None]
-                    },
-                    'smoldering': {
-                        'CO2': [20.963442081420308, None],
-                        'CO': [None, 2.0],
-                        'PM2.5': [2.2722977938928097, None]
-                    }
-                }
-            }
+            'litter-lichen-moss': LITTER_LICHEN_MOSS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED
         }
         assert_results_are_approximately_equal(expected, emissions)
