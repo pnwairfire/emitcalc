@@ -41,9 +41,9 @@ First, install pip:
 
     sudo apt-get install python-pip
 
-Then, to install, for example, v0.1.5, use the following:
+Then, to install, for example, v0.1.6, use the following:
 
-    sudo pip install git+https://github.com/pnwairfire/emitcalc@v0.1.5
+    sudo pip install git+https://github.com/pnwairfire/emitcalc@v0.1.6
 
 If you get an error like
 
