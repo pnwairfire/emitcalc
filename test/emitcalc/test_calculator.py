@@ -22,6 +22,12 @@ LITTER_LICHEN_MOSS_RX_13_130_CONSUME_OUT = {
     "residual": [1.12, 0.32],
     "total": [1.2, 0.34]
 }
+DUMMY_SUMMARY_CONSUME_OUT = {
+    "flaming": [13.3, 30.14],
+    "smoldering": [4.2, 0.34312],
+    "residual": [1.13432, 0.3232],
+    "total": [12.2, 0.334]
+}
 
 # Test lookup dicts
 
@@ -92,23 +98,38 @@ BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
         'CO': [None, 36.0]
     }
 }
-LITTER_LICHEN_MOSS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
-    'litter': {
-        'flaming': {
-            'CO2': [182.299, None],
-            'CO': [None, 1.4],
-            'PM2.5': [19.759999999999998, None]
-        },
-        'smoldering': {
-            'CO2': [28.046, None],
-            'CO': [None, 1.2],
-            'PM2.5': [3.04, None]
-        }
+LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
+    'flaming': {
+        'CO2': [182.299, None],
+        'CO': [None, 1.4],
+        'PM2.5': [19.759999999999998, None]
+    },
+    'smoldering': {
+        'CO2': [28.046, None],
+        'CO': [None, 1.2],
+        'PM2.5': [3.04, None]
+    }
+}
+BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
+    'flaming': {
+        'CO2': [370.90834999999998, None],
+        'CO': [None, 12.8],
+        'PM2.5': [40.803999999999998, None]
+    },
+    'smoldering': {
+        'CO2': [48.94027, None],
+        'CO': [None, 3.2],
+        'PM2.5': [5.3047999999999997, None]
+    },
+    'residual': {
+        'CO2': [9.1, None],
+        'CO': [None, 36.0]
     }
 }
 
 def assert_results_are_approximately_equal(expected, actual):
     # categories
+
     assert set(expected.keys()) == set(actual.keys())
     for c in expected.keys():
         print '- %s' % (c)
@@ -127,6 +148,9 @@ def assert_results_are_approximately_equal(expected, actual):
                     # emissions values
                     assert len(expected[c][sc][cp][s]) == len(actual[c][sc][cp][s])
                     for i in xrange(len(expected[c][sc][cp][s])):
+                        print "expected[%s][%s][%s][%s][%s][%s] vs actual[%s][%s][%s][%s][%s][%s]" % (
+                            c,sc,cp,s,i,expected[c][sc][cp][s][i],
+                            c,sc,cp,s,i,actual[c][sc][cp][s][i])
                         if expected[c][sc][cp][s][i] is None:
                             assert None == actual[c][sc][cp][s][i]
                         else:
@@ -161,7 +185,7 @@ class TestEmissionsCalculator:
     def test_missing_combustion_phase_keys(self):
         consume_output = {
             "litter-lichen-moss": {
-                "litter": { # <-- Missing 'flaming'
+                "litter": { # <-- Missing 'flaming'; so it's skipped
                     "smoldering": [0.149, 0.2],
                     "total": [1.4949, 0.34],
                     "residual": [0.0, 0.0]
@@ -179,12 +203,13 @@ class TestEmissionsCalculator:
                 consume_output, True)
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
         emissions = calculator.calculate(['13', '130'], consume_output, True)
-        assert 0 == len(emissions["litter-lichen-moss"].keys())  # <-- "litter" should have been skipped
-        assert 1 == len(emissions["ground fuels"].keys())  # <-- "blah" should have been skipped
         expected = {
-            "litter-lichen-moss": {},
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+            },
+            "summary": {
+                "ground fuels": BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED,
+                "total": BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
         }
         assert_results_are_approximately_equal(expected, emissions)
@@ -214,20 +239,30 @@ class TestEmissionsCalculator:
                 consume_output, True)
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
         emissions = calculator.calculate(['13', '130'], consume_output, True)
-        assert 0 == len(emissions["litter-lichen-moss"].keys())  # <-- "litter" should have been skipped
         assert 1 == len(emissions["ground fuels"].keys())  # <-- "blah" should have been skipped
         expected = {
-            "litter-lichen-moss": {},
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+            },
+            "summary": {
+                "ground fuels": BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED,
+                "total": BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
+
         }
         assert_results_are_approximately_equal(expected, emissions)
 
     def test_basic_one_fuel_bed(self):
         consume_output = {
             "ground fuels": {
-                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_CONSUME_OUT
+                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_CONSUME_OUT,
+            },
+            "debug": {  # <-- ignored
+                "foo": "bar"
+            },
+             "summary": {  # <-- ignored
+                "ground fuels": DUMMY_SUMMARY_CONSUME_OUT,
+                "total": DUMMY_SUMMARY_CONSUME_OUT
             }
         }
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
@@ -235,6 +270,10 @@ class TestEmissionsCalculator:
         expected = {
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+            },
+            'summary': {
+                'ground fuels': BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED,
+                'total': BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
         }
         assert_results_are_approximately_equal(expected, emissions)
@@ -243,6 +282,13 @@ class TestEmissionsCalculator:
         consume_output = {
             "ground fuels": {
                 "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT
+            },
+            "debug": {  # <-- ignored
+                "foo": "bar"
+            },
+            "summary": {  # <-- ignored
+                "ground fuels": DUMMY_SUMMARY_CONSUME_OUT,
+                "total": DUMMY_SUMMARY_CONSUME_OUT
             }
         }
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
@@ -250,6 +296,10 @@ class TestEmissionsCalculator:
         expected = {
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+            },
+            'summary': {
+                'ground fuels': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED,
+                'total': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
         }
         assert_results_are_approximately_equal(expected, emissions)
@@ -261,6 +311,14 @@ class TestEmissionsCalculator:
             },
             "ground fuels": {
                 "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT
+            },
+            "debug": {  # <-- ignored
+                "foo": "bar"
+            },
+            "summary": {  # <-- ignored
+                "litter-lichen-moss": DUMMY_SUMMARY_CONSUME_OUT,
+                "ground fuels": DUMMY_SUMMARY_CONSUME_OUT,
+                "total": DUMMY_SUMMARY_CONSUME_OUT
             }
         }
         calculator = EmissionsCalculator(LOOK_UP_DIFFERING)
@@ -270,6 +328,16 @@ class TestEmissionsCalculator:
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED
             },
-            'litter-lichen-moss': LITTER_LICHEN_MOSS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED
+            'litter-lichen-moss': {
+                'litter': LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED
+            },
+            "summary": {
+                "ground fuels": BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED,
+                "litter-lichen-moss": LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED,
+                "total": BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED
+            }
+
         }
         assert_results_are_approximately_equal(expected, emissions)
+
+    # # TODO: test case where summary sums float with None (and thus skips 'None')

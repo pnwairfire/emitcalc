@@ -135,7 +135,7 @@ class EmissionsCalculator(object):
                     "overstory": { ... },
                     "midstory": { ... },
                     "snags class 1 no foliage": { ... }
-                }
+                },
                 "summary": {
                     "litter-lichen-moss": { ...},
                     "nonwoody": { ... },
@@ -170,7 +170,10 @@ class EmissionsCalculator(object):
         num_fuelbeds = len(ef_sets)
 
         for category, c_dict in consumption_dict.items():
-            emissions[category] = {}
+            if not self._is_valid_category(category):
+                continue
+
+            e_c_dict = {}
             for sub_category, sc_dict in c_dict.items():
                 if not self._is_valid_sub_category_dict(category,
                         sub_category, sc_dict, num_fuelbeds):
@@ -193,9 +196,47 @@ class EmissionsCalculator(object):
                         for species, ef in ef_sets[i][rsc_key].items():
                             e_sc_dict['residual'][species][i] = ef * sc_dict['residual'][i]
 
-                emissions[category][sub_category] = e_sc_dict
+                e_c_dict[sub_category] = e_sc_dict
+            if e_c_dict:
+                emissions[category] = e_c_dict
+
+        emissions['summary'] = self._compute_summary(emissions, species_by_ef_group, ef_sets, flaming_smoldering_key)
 
         return emissions
+
+    def _compute_summary(self, emissions, species_by_ef_group, ef_sets, flaming_smoldering_key):
+        # TODO: compute emissions['summary'][CATEGORY] for all categories
+        # and then compute emissions['summary']['totals'] from each of the
+        # category summaries
+        species_by_ef_group = self._species_sets_by_ef_group(ef_sets,
+            flaming_smoldering_key)
+        num_fuelbeds = len(ef_sets)
+        summary = {
+            'total': self._initialize_emissions_sub_category_dict(
+                    species_by_ef_group, flaming_smoldering_key,
+                    ['woody_rsc', 'duff_rsc'], num_fuelbeds)
+        }
+        for category, e_c_dict in emissions.items():
+            if not e_c_dict:
+                # empty due to no valid subcategories
+                continue
+
+            summary[category] = self._initialize_emissions_sub_category_dict(
+                species_by_ef_group, flaming_smoldering_key,
+                ['woody_rsc', 'duff_rsc'], num_fuelbeds)
+            for sub_category, e_sc_dict in e_c_dict.items():
+                for phase, p_dict in e_sc_dict.items():
+                    for species, s_list in p_dict.items():
+                        for i in xrange(len(s_list)):
+                            val = s_list[i]
+                            if val is not None:
+                                if summary[category][phase][species][i] is None:
+                                    summary[category][phase][species][i] = 0.0
+                                if summary['total'][phase][species][i] is None:
+                                    summary['total'][phase][species][i] = 0.0
+                                summary[category][phase][species][i] += val
+                                summary['total'][phase][species][i] += val
+        return summary
 
     def _species_sets_by_ef_group(self, ef_sets, flaming_smoldering_key):
         """Returns the cumulative set of checmical species accross all
@@ -212,6 +253,15 @@ class EmissionsCalculator(object):
         fuelbeds for a particular EF group.
         """
         return set(reduce(lambda a,b: a+b, [efs[ef_group_key].keys() for efs in ef_sets]))
+
+
+    CATEGORIES_TO_SKIP = {
+        'debug',
+        'summary'
+    }
+
+    def _is_valid_category(self, category):
+        return category not in self.CATEGORIES_TO_SKIP
 
     COMBUSTION_PHASES = set(['flaming', 'smoldering', 'residual'])
 
@@ -252,6 +302,10 @@ class EmissionsCalculator(object):
             'smoldering': dict([(e, [None] * num_fuelbeds) for e in fs_species])
         }
         if rsc_key:
-            r_species = species_by_ef_group[rsc_key]
+            if hasattr(rsc_key, 'pop'):
+                r_species = [species_by_ef_group[k] for k in rsc_key]
+                r_species = set(reduce(lambda a,b: [a.add(e) for e in b] and a, r_species, set()))
+            else:
+                r_species = species_by_ef_group[rsc_key]
             e_sc_dict['residual'] = dict([(e, [None] * num_fuelbeds) for e in r_species])
         return e_sc_dict
