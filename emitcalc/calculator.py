@@ -175,26 +175,24 @@ class EmissionsCalculator(object):
 
             e_c_dict = {}
             for sub_category, sc_dict in c_dict.items():
-                if not self._is_valid_sub_category_dict(category,
-                        sub_category, sc_dict, num_fuelbeds):
-                    continue
-
                 # Sub-categories don't use the same residual EFs. Some use
                 # woody_rsc, some use duff_rsc, and some have not residual
                 # emissions
                 rsc_key = self.RSC_KEYS.get(sub_category)
-
                 # Initialize emissions sub-category dict
                 e_sc_dict = self._initialize_emissions_sub_category_dict(
                     species_by_ef_group, flaming_smoldering_key, rsc_key, num_fuelbeds)
+                for combustion_phase, cp_array in sc_dict.items():
+                    if not self._is_valid_combustion_phase(combustion_phase,
+                            cp_array, num_fuelbeds):
+                        continue
+                    if 'residual' == combustion_phase and not rsc_key:
+                        continue
 
-                for i in xrange(num_fuelbeds):
-                    for species, ef in ef_sets[i][flaming_smoldering_key].items():
-                        e_sc_dict['flaming'][species][i] = ef * sc_dict['flaming'][i]
-                        e_sc_dict['smoldering'][species][i] = ef * sc_dict['smoldering'][i]
-                    if rsc_key:
-                        for species, ef in ef_sets[i][rsc_key].items():
-                            e_sc_dict['residual'][species][i] = ef * sc_dict['residual'][i]
+                    k = rsc_key if 'residual' == combustion_phase else flaming_smoldering_key
+                    for i in xrange(num_fuelbeds):
+                        for species, ef in ef_sets[i][k].items():
+                            e_sc_dict[combustion_phase][species][i] = ef * sc_dict[combustion_phase][i]
 
                 e_c_dict[sub_category] = e_sc_dict
             if e_c_dict:
@@ -259,34 +257,21 @@ class EmissionsCalculator(object):
         'debug',
         'summary'
     }
-
     def _is_valid_category(self, category):
         return category not in self.CATEGORIES_TO_SKIP
 
-    COMBUSTION_PHASES = set(['flaming', 'smoldering', 'residual'])
-
-    def _is_valid_sub_category_dict(self, category, sub_category, sc_dict,
-            num_fuelbeds):
-        # Make sure sc_dict is complete
-        missing_keys = self.COMBUSTION_PHASES.difference(sc_dict.keys())
-        if missing_keys:
-            msg = self.ERROR_MESSAGES['MISSING_KEYS'] % (
-                category, sub_category, missing_keys)
-            if not self._options.get('silent_fail'):
-                raise ValueError(msg)
-            logging.info('%s -- Skipping' % (msg))
+    VALID_COMBUSTION_PHASES = set(['flaming', 'smoldering', 'residual'])
+    def _is_valid_combustion_phase(self, combustion_phase, cp_array, num_fuelbeds):
+        if combustion_phase not in self.VALID_COMBUSTION_PHASES:
             return False
 
-        # Make sure each cumbustion phase array has as many values as there are fuelbeds
-        if 1 != len(set([num_fuelbeds] + [len(sc_dict[e]) for e in self.COMBUSTION_PHASES])):
+        if len(cp_array) != num_fuelbeds:
             msg = self.ERROR_MESSAGES['DATA_LENGTH_MISMATCH']
             if not self._options.get('silent_fail'):
                 raise ValueError(msg)
             logging.info('%s -- Skipping' % (msg))
             return False
-
         return True
-
 
     def _initialize_emissions_sub_category_dict(self, species_by_ef_group,
             flaming_smoldering_key, rsc_key, num_fuelbeds):

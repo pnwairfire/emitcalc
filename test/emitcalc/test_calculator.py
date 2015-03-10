@@ -1,6 +1,7 @@
 __author__      = "Joel Dubowy"
 __copyright__   = "Copyright 2014, AirFire, PNW, USFS"
 
+import copy
 from numpy.testing import assert_approx_equal
 from py.test import raises#, mark
 
@@ -14,14 +15,25 @@ BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT = {
     "residual": [2.0, 0.3],
     "total": [1.4949, 1.34]
 }
+
 BASAL_ACCUMULATIONS_RX_13_CONSUME_OUT = dict([(k, v[:1]) for k,v in
     BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT.items()])
-LITTER_LICHEN_MOSS_RX_13_130_CONSUME_OUT = {
+
+BASAL_ACCUMULATIONS_LEN_1_FLAMING_RX_13_130_CONSUME_OUT = copy.deepcopy(
+    BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT)
+BASAL_ACCUMULATIONS_LEN_1_FLAMING_RX_13_130_CONSUME_OUT['flaming'].pop()
+
+BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_CONSUME_OUT = copy.deepcopy(
+    BASAL_ACCUMULATIONS_LEN_1_FLAMING_RX_13_130_CONSUME_OUT)
+BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_CONSUME_OUT.pop('flaming')
+
+LITTER_RX_13_130_CONSUME_OUT = {
     "flaming": [1.3, 0.14],
     "smoldering": [0.2, 0.12],
     "residual": [1.12, 0.32],
     "total": [1.2, 0.34]
 }
+
 DUMMY_SUMMARY_CONSUME_OUT = {
     "flaming": [13.3, 30.14],
     "smoldering": [4.2, 0.34312],
@@ -78,10 +90,17 @@ BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED = {
         'CO': [280.0, 36.0]
     }
 }
+
 BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED = dict([
     (k, dict([(k2, v2[:1]) for k2,v2 in  v.items()]))
         for k,v in BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED.items()
 ])
+
+BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED = copy.deepcopy(
+    BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED)
+for s, sa in BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED['flaming'].items():
+    BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED['flaming'][s] = len(sa) * [None]
+
 BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
     'flaming': {
         'CO2': [188.60934999999998, None],
@@ -167,6 +186,8 @@ def assert_results_are_approximately_equal(expected, actual):
 
 class TestEmissionsCalculator:
 
+    # Error cases that raise exception:
+
     def test_missing_efs(self):
         consume_output = {
             "litter-lichen-moss": {
@@ -182,56 +203,12 @@ class TestEmissionsCalculator:
             EmissionsCalculator(LOOK_UP).calculate(['13sdf', '130'],
                 consume_output, True)
 
-    def test_missing_combustion_phase_keys(self):
-        consume_output = {
-            "litter-lichen-moss": {
-                "litter": { # <-- Missing 'flaming'; so it's skipped
-                    "smoldering": [0.149, 0.2],
-                    "total": [1.4949, 0.34],
-                    "residual": [0.0, 0.0]
-                }
-            },
-            "ground fuels": {
-                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT,
-                "blah": { # <-- Missing 'flaming' and 'smoldering'
-                    "residual": [0.0, 0.0]
-                }
-            }
-        }
-        with raises(ValueError) as e:
-             EmissionsCalculator(LOOK_UP).calculate(['13', '130'],
-                consume_output, True)
-        calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
-        emissions = calculator.calculate(['13', '130'], consume_output, True)
-        expected = {
-            'ground fuels': {
-                'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
-            },
-            "summary": {
-                "ground fuels": BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED,
-                "total": BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
-            }
-        }
-        assert_results_are_approximately_equal(expected, emissions)
+    # Error cases that raise exception unless silent_fail=True:
 
     def test_differing_number_of_consumption_values(self):
         consume_output = {
-            "litter-lichen-moss": {
-                "litter": {
-                    "smoldering": [0.2],  # <-- Only has one value
-                    "total": [1.4949327591400063, 0.34],
-                    "flaming": [1.3454394832260057, 0.14],
-                    "residual": [0.0, 0.0]
-                }
-            },
             "ground fuels": {
-                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT,
-                "blah": {
-                    "smoldering": [0.2],  # <-- Only has one value
-                    "total": [1.1, 1.34],
-                    "flaming": [1.3, 1.14],
-                    "residual": [0.0, 0.0]
-                }
+                "basal accumulations": BASAL_ACCUMULATIONS_LEN_1_FLAMING_RX_13_130_CONSUME_OUT
             }
         }
         with raises(ValueError) as e:
@@ -239,18 +216,41 @@ class TestEmissionsCalculator:
                 consume_output, True)
         calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
         emissions = calculator.calculate(['13', '130'], consume_output, True)
-        assert 1 == len(emissions["ground fuels"].keys())  # <-- "blah" should have been skipped
+        # Flaming dict should have been skipped, so
         expected = {
             'ground fuels': {
-                'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+                'basal accumulations': BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             },
             "summary": {
-                "ground fuels": BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED,
-                "total": BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+                "ground fuels": BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED,
+                "total": BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
 
         }
         assert_results_are_approximately_equal(expected, emissions)
+
+    # Error situations where some input data is ignored
+
+    def test_missing_combustion_phase_keys(self):
+        consume_output = {
+            "ground fuels": {
+                "basal accumulations": BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_CONSUME_OUT
+            }
+        }
+        calculator = EmissionsCalculator(LOOK_UP)
+        emissions = calculator.calculate(['13', '130'], consume_output, True)
+        expected = {
+            'ground fuels': {
+                'basal accumulations': BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+            },
+            "summary": {
+                "ground fuels": BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED,
+                "total": BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
+            }
+        }
+        assert_results_are_approximately_equal(expected, emissions)
+
+    # Valid data cases
 
     def test_basic_one_fuel_bed(self):
         consume_output = {
@@ -307,7 +307,7 @@ class TestEmissionsCalculator:
     def test_varying_chemical_species_two_fuel_beds(self):
         consume_output = {
             "litter-lichen-moss": {
-                "litter": LITTER_LICHEN_MOSS_RX_13_130_CONSUME_OUT
+                "litter": LITTER_RX_13_130_CONSUME_OUT
             },
             "ground fuels": {
                 "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT
