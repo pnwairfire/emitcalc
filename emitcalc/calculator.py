@@ -227,13 +227,8 @@ class EmissionsCalculator(object):
                     for species, s_list in p_dict.items():
                         for i in xrange(len(s_list)):
                             val = s_list[i]
-                            if val is not None:
-                                if summary[category][phase][species][i] is None:
-                                    summary[category][phase][species][i] = 0.0
-                                if summary['total'][phase][species][i] is None:
-                                    summary['total'][phase][species][i] = 0.0
-                                summary[category][phase][species][i] += val
-                                summary['total'][phase][species][i] += val
+                            summary[category][phase][species][i] += val
+                            summary['total'][phase][species][i] += val
         return summary
 
     def _species_sets_by_ef_group(self, ef_sets, flaming_smoldering_key):
@@ -276,15 +271,14 @@ class EmissionsCalculator(object):
     def _initialize_emissions_sub_category_dict(self, species_by_ef_group,
             flaming_smoldering_key, rsc_key, num_fuelbeds):
         """Initializes each combustion phase's species-specific emissions
-        arrays to None's so that, even if the ef-lookup object has different
+        arrays to 0.0's so that, even if the ef-lookup object has different
         sets of chemical species for the various fuelbeds, each emissions
-        array will be the same length (with None's holding the place when
-        a fuelbed lacks a particular species' EF).
+        array will be the same length).
         """
         fs_species = species_by_ef_group[flaming_smoldering_key]
         e_sc_dict = {
-            'flaming': dict([(e, [None] * num_fuelbeds) for e in fs_species]),
-            'smoldering': dict([(e, [None] * num_fuelbeds) for e in fs_species])
+            'flaming': dict([(e, [0.0] * num_fuelbeds) for e in fs_species]),
+            'smoldering': dict([(e, [0.0] * num_fuelbeds) for e in fs_species])
         }
         if rsc_key:
             if hasattr(rsc_key, 'pop'):
@@ -292,5 +286,5 @@ class EmissionsCalculator(object):
                 r_species = set(reduce(lambda a,b: [a.add(e) for e in b] and a, r_species, set()))
             else:
                 r_species = species_by_ef_group[rsc_key]
-            e_sc_dict['residual'] = dict([(e, [None] * num_fuelbeds) for e in r_species])
+            e_sc_dict['residual'] = dict([(e, [0.0] * num_fuelbeds) for e in r_species])
         return e_sc_dict

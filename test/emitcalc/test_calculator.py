@@ -103,46 +103,50 @@ for s, sa in BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EX
 
 BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
     'flaming': {
-        'CO2': [188.60934999999998, None],
-        'CO': [None, 11.4],
-        'PM2.5': [20.444, None]
+        'CO2': [188.60934999999998, 0.0],
+        'CO': [0.0, 11.4],
+        'PM2.5': [20.444, 0.0]
     },
     'smoldering': {
-        'CO2': [20.89427, None],
-        'CO': [None, 2.0],
-        'PM2.5': [2.2647999999999997, None]
+        'CO2': [20.89427, 0.0],
+        'CO': [0.0, 2.0],
+        'PM2.5': [2.2647999999999997, 0.0]
     },
     'residual': {
-        'CO2': [9.1, None],
-        'CO': [None, 36.0]
+        'CO2': [9.1, 0.0],
+        'CO': [0.0, 36.0]
     }
 }
 LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
     'flaming': {
-        'CO2': [182.299, None],
-        'CO': [None, 1.4],
-        'PM2.5': [19.759999999999998, None]
+        'CO2': [182.299, 0.0],
+        'CO': [0.0, 1.4],
+        'PM2.5': [19.759999999999998, 0.0]
     },
     'smoldering': {
-        'CO2': [28.046, None],
-        'CO': [None, 1.2],
-        'PM2.5': [3.04, None]
+        'CO2': [28.046, 0.0],
+        'CO': [0.0, 1.2],
+        'PM2.5': [3.04, 0.0]
+    },
+    'residual': {
+        'CO2': [0.0, 0.0],
+        'CO': [0.0, 0.0]
     }
 }
 BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
     'flaming': {
-        'CO2': [370.90834999999998, None],
-        'CO': [None, 12.8],
-        'PM2.5': [40.803999999999998, None]
+        'CO2': [370.90834999999998, 0.0],
+        'CO': [0.0, 12.8],
+        'PM2.5': [40.803999999999998, 0.0]
     },
     'smoldering': {
-        'CO2': [48.94027, None],
-        'CO': [None, 3.2],
-        'PM2.5': [5.3047999999999997, None]
+        'CO2': [48.94027, 0.0],
+        'CO': [0.0, 3.2],
+        'PM2.5': [5.3047999999999997, 0.0]
     },
     'residual': {
-        'CO2': [9.1, None],
-        'CO': [None, 36.0]
+        'CO2': [9.1, 0.0],
+        'CO': [0.0, 36.0]
     }
 }
 
