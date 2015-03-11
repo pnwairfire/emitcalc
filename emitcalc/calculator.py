@@ -60,6 +60,10 @@ class EmissionsCalculator(object):
         "squirrel middens": 'duff_rsc'
     }
 
+    ##
+    ## Public Interface
+    ##
+
     def calculate(self, ef_lookup_ids, consumption_dict, is_rx):
         """Calculates emissions given consume output
 
@@ -199,12 +203,9 @@ class EmissionsCalculator(object):
 
         return emissions
 
-    def _get_ef_sets(self, ef_lookup_ids):
-        try:
-            ef_sets = [self._ef_lookup[eid] for eid in ef_lookup_ids]
-        except KeyError, e:
-            raise KeyError(self.ERROR_MESSAGES["EF_LOOKUP_FAILURE"] % (e))
-        return ef_sets
+    ##
+    ## Summary
+    ##
 
     def _compute_summary(self, emissions):
         # TODO: compute emissions['summary'][CATEGORY] for all categories
@@ -228,6 +229,17 @@ class EmissionsCalculator(object):
                             summary['total'][phase][species][i] += val
         return summary
 
+    ##
+    ## Emission Factors and Chemical Species
+    ##
+
+    def _get_ef_sets(self, ef_lookup_ids):
+        try:
+            ef_sets = [self._ef_lookup[eid] for eid in ef_lookup_ids]
+        except KeyError, e:
+            raise KeyError(self.ERROR_MESSAGES["EF_LOOKUP_FAILURE"] % (e))
+        return ef_sets
+
     def _species_sets_by_ef_group(self):
         """Returns the cumulative set of checmical species accross all
         fuelbeds for each of the EF group.
@@ -246,6 +258,10 @@ class EmissionsCalculator(object):
             for ef_group_key in ef_group_keys:
                 species.extend(ef_set[ef_group_key].keys())
         return set(species)
+
+    ##
+    ## Data Validation
+    ##
 
     CATEGORIES_TO_SKIP = {
         'debug',
@@ -266,6 +282,10 @@ class EmissionsCalculator(object):
             logging.info('%s -- Skipping' % (msg))
             return False
         return True
+
+    ##
+    ## Data Initialization
+    ##
 
     def _initialize_emissions_inner_dict(self):
         """Initializes each combustion phase's species-specific emissions
