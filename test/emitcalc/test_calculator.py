@@ -99,7 +99,7 @@ BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED = dict([
 BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED = copy.deepcopy(
     BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED)
 for s, sa in BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED['flaming'].items():
-    BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED['flaming'][s] = len(sa) * [None]
+    BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED['flaming'][s] = len(sa) * [0.0]
 
 BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
     'flaming': {
@@ -114,7 +114,9 @@ BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
     },
     'residual': {
         'CO2': [9.1, 0.0],
-        'CO': [0.0, 36.0]
+        'CO': [0.0, 36.0],
+        'NM': [0.0, 0.0],
+        'FDF': [0.0, 0.0]
     }
 }
 LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
@@ -130,14 +132,16 @@ LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
     },
     'residual': {
         'CO2': [0.0, 0.0],
-        'CO': [0.0, 0.0]
+        'CO': [0.0, 0.0],
+        'NM': [0.0, 0.0],
+        'FDF': [0.0, 0.0]
     }
 }
 BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = {
     'flaming': {
         'CO2': [370.90834999999998, 0.0],
         'CO': [0.0, 12.8],
-        'PM2.5': [40.803999999999998, 0.0]
+        'PM2.5': [40.20399999999999, 0.0]
     },
     'smoldering': {
         'CO2': [48.94027, 0.0],
@@ -146,7 +150,9 @@ BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED = 
     },
     'residual': {
         'CO2': [9.1, 0.0],
-        'CO': [0.0, 36.0]
+        'CO': [0.0, 36.0],
+        'NM': [0.0, 0.0],
+        'FDF': [0.0, 0.0]
     }
 }
 
@@ -344,4 +350,4 @@ class TestEmissionsCalculator:
         }
         assert_results_are_approximately_equal(expected, emissions)
 
-    # # TODO: test case where summary sums float with None (and thus skips 'None')
+    # TODO: test case where summary sums float with None (and thus skips 'None')
