@@ -25,7 +25,7 @@ test_requirements = parse_requirements(dependency_links, 'requirements-test.txt'
 
 setup(
     name='emitcalc',
-    version='0.1.8',
+    version='0.1.9',
     license='MIT',
     author='Joel Dubowy',
     author_email='jdubowy@gmail.com',
