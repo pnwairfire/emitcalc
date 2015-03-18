@@ -19,6 +19,7 @@ class EmissionsCalculator(object):
         Options:
          - silent_fail - if any emissions calculations fails, or if subset of
            data is invalid, simply skip a exclude related emissions from output
+         - species - whitelist of species to compute emissions for
 
         Note:  ef_lookup can be a simple dict or something like an instance
         of fccs2ef.lookup.Fccs2Ef.  It just needs to support __getitem___, and
@@ -33,7 +34,8 @@ class EmissionsCalculator(object):
             }
         """
         self._ef_lookup = ef_lookup
-        self._options = options
+        self._silent_fail = options.get('silent_fail')
+        self._species_whitelist = set(options.get('species', []))
 
     ERROR_MESSAGES = {
         "EF_LOOKUP_FAILURE": "Failed to look up emissions factors for %s",
@@ -168,6 +170,7 @@ class EmissionsCalculator(object):
         self.flaming_smoldering_key = 'flame_smold_rx' if is_rx else 'flame_smold_wf'
         self.ef_sets = self._get_ef_sets(ef_lookup_ids)
         self.num_fuelbeds = len(self.ef_sets)
+        output_species = self._get_output_species()
         self.species_by_ef_group = self._species_sets_by_ef_group()
 
         emissions = {}
@@ -192,7 +195,8 @@ class EmissionsCalculator(object):
 
                     k = rsc_key if 'residual' == combustion_phase else self.flaming_smoldering_key
                     for i in xrange(self.num_fuelbeds):
-                        for species, ef in self.ef_sets[i][k].items():
+                        for species in output_species[i][k]:
+                            ef = self.ef_sets[i][k][species]
                             e_sc_dict[combustion_phase][species][i] = ef * sc_dict[combustion_phase][i]
 
                 e_c_dict[sub_category] = e_sc_dict
@@ -241,6 +245,17 @@ class EmissionsCalculator(object):
             raise KeyError(self.ERROR_MESSAGES["EF_LOOKUP_FAILURE"] % (e))
         return ef_sets
 
+    def _get_output_species(self):
+        d = []
+        for ef_set in self.ef_sets:
+            d.append({})
+            for k in ['woody_rsc', 'duff_rsc', self.flaming_smoldering_key]:
+                if self._species_whitelist:
+                    d[-1][k] = self._species_whitelist.intersection(ef_set[k].keys())
+                else:
+                    d[-1][k] = ef_set[k].keys()
+        return d
+
     def _species_sets_by_ef_group(self):
         """Returns the cumulative set of checmical species accross all
         fuelbeds for each of the EF group.
@@ -258,7 +273,10 @@ class EmissionsCalculator(object):
         for ef_set in self.ef_sets:
             for ef_group_key in ef_group_keys:
                 species.extend(ef_set[ef_group_key].keys())
-        return set(species)
+        species = set(species)
+        if self._species_whitelist:
+            species = self._species_whitelist.intersection(species)
+        return species
 
     ##
     ## Data Validation
@@ -278,7 +296,7 @@ class EmissionsCalculator(object):
 
         if len(cp_array) != self.num_fuelbeds:
             msg = self.ERROR_MESSAGES['DATA_LENGTH_MISMATCH']
-            if not self._options.get('silent_fail'):
+            if not self._silent_fail:
                 raise ValueError(msg)
             logging.info('%s -- Skipping' % (msg))
             return False

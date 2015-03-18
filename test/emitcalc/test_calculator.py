@@ -199,6 +199,27 @@ TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPEC
     }
 }
 
+LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED = copy.deepcopy(
+    LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED)
+for k,v in LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items():
+    for k2 in v.keys():
+        if k2 not in ['CO','PM2.5','FDF']:
+            v.pop(k2)
+
+BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED = copy.deepcopy(
+    BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED)
+for k,v in BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items():
+    for k2 in v.keys():
+        if k2 not in ['CO','PM2.5','FDF']:
+            v.pop(k2)
+
+TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED = copy.deepcopy(
+    TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED)
+for k,v in TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items():
+    for k2 in v.keys():
+        if k2 not in ['CO','PM2.5','FDF']:
+            v.pop(k2)
+
 def assert_results_are_approximately_equal(expected, actual):
     # categories
 
@@ -388,6 +409,42 @@ class TestEmissionsCalculator:
                 "ground fuels": BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED,
                 "litter-lichen-moss": LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED,
                 "total": TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED
+            }
+
+        }
+        assert_results_are_approximately_equal(expected, emissions)
+
+    def test_varying_chemical_species_two_fuel_beds_species_whitelist(self):
+        consume_output = {
+            "litter-lichen-moss": {
+                "litter": LITTER_RX_13_130_CONSUME_OUT
+            },
+            "ground fuels": {
+                "basal accumulations": BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT
+            },
+            "debug": {  # <-- ignored
+                "foo": "bar"
+            },
+            "summary": {  # <-- ignored
+                "litter-lichen-moss": DUMMY_SUMMARY_CONSUME_OUT,
+                "ground fuels": DUMMY_SUMMARY_CONSUME_OUT,
+                "total": DUMMY_SUMMARY_CONSUME_OUT
+            }
+        }
+        calculator = EmissionsCalculator(LOOK_UP_DIFFERING, species=['CO', 'PM2.5', 'FDF'])
+        emissions = calculator.calculate(['13', '130'], consume_output, True)
+        # TODO: hand compute these values to make sure they're correct
+        expected = {
+            'ground fuels': {
+                'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED
+            },
+            'litter-lichen-moss': {
+                'litter': LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED
+            },
+            "summary": {
+                "ground fuels": BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED,
+                "litter-lichen-moss": LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED,
+                "total": TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED
             }
 
         }
