@@ -567,3 +567,20 @@ than raise an exception.  The calculator is instantiated in
             }
         }
     >>> calculator = EmissionsCalculator(look_up, silent_fail=True)
+
+#### Species Whitelist
+
+You can specify a subset of chemical species for which the calulator should
+compute emissions by instantiating the calculator with the ```species```
+option.  For example, to only compute CO2 and PM2.5 levels:
+
+    >>> from emitcalc.calculator import EmissionsCalculator
+    >>> look_up = {
+         '13': {
+                'flame_smold_wf': {'CO': 14.0,'PM10': 15.2},
+                'flame_smold_rx': {'CO2': 140.23,'PM2.5': 15.2},
+                'woody_rsc': {'CO': 140.0,'NM': 23.0},
+                'duff_rsc': {'CO2': 4.55}
+            }
+        }
+    >>> calculator = EmissionsCalculator(look_up, species=['CO2', 'PM2.5'])
