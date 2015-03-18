@@ -274,6 +274,10 @@ get the following limited set of emissions:
                 'smoldering': {
                     'CO': [5.738488752416514, 13.5],
                     'CO2': [61.900636750105214, 162.3105]
+                },
+                'total': {
+                    'CO': [79.33256850764742, 68.2],
+                    'CO2': [413.89519569614663, 330.5284]
                 }
             },
             'woody fuels': {
@@ -324,7 +328,6 @@ get the following limited set of emissions:
             }
         }
     }
-
 
 If the lookup object has different EF sets for each fuelbed, the arrays of
 emissions values will be filled in with ```0.0``` appropriately.  The
@@ -477,10 +480,18 @@ following example illustrates this:
                     'CO': [0.0, 4.0],
                     'CO2': [41.926884162840615, 0.0],
                     'PM2.5': [4.5445955877856195, 0.0]
+                },
+                'total': {
+                    'CO': [0.0, 55.199999999999996],
+                    'CO2': [424.36484162840617, 0.0],
+                    'FDF': [0.0, 0.0],
+                    'NM': [0.0, 0.0],
+                    'PM2.5': [45.44595587785619, 0.0]
                 }
             }
         }
     }
+
 
 Note from the above examples that the emissions calculator produces
 a 'summary' section.  The values in this section are computed from the

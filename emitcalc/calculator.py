@@ -155,9 +155,9 @@ class EmissionsCalculator(object):
 
             {
                 "smoldering": [0.14949327591400063],
-                "total": [1.4949327591400063],
                 "flaming": [1.3454394832260057],
                 "residual": [0.0]
+                /* possibly other keys, which are ignored */
             }
         """
         # TODO: make more fault tolerant
@@ -212,7 +212,7 @@ class EmissionsCalculator(object):
         # and then compute emissions['summary']['totals'] from each of the
         # category summaries
         summary = {
-            'total': self._initialize_emissions_inner_dict()
+            'total': self._initialize_emissions_inner_dict(include_total=True)
         }
         for category, e_c_dict in emissions.items():
             if not e_c_dict:
@@ -227,6 +227,7 @@ class EmissionsCalculator(object):
                             val = s_list[i]
                             summary[category][phase][species][i] += val
                             summary['total'][phase][species][i] += val
+                            summary['total']['total'][species][i] += val
         return summary
 
     ##
@@ -287,7 +288,7 @@ class EmissionsCalculator(object):
     ## Data Initialization
     ##
 
-    def _initialize_emissions_inner_dict(self):
+    def _initialize_emissions_inner_dict(self, include_total=False):
         """Initializes each combustion phase's species-specific emissions
         arrays to 0.0's so that, even if the ef-lookup object has different
         sets of chemical species for the various fuelbeds, each emissions
@@ -295,8 +296,12 @@ class EmissionsCalculator(object):
         """
         fs_species = self.species_by_ef_group['flaming_smoldering']
         r_species = self.species_by_ef_group['residual']
-        return {
+        d = {
             'flaming': dict([(e, [0.0] * self.num_fuelbeds) for e in fs_species]),
             'smoldering': dict([(e, [0.0] * self.num_fuelbeds) for e in fs_species]),
             'residual': dict([(e, [0.0] * self.num_fuelbeds) for e in r_species])
         }
+        if include_total:
+            all_species = r_species.union(fs_species)
+            d['total'] = dict([(e, [0.0] * self.num_fuelbeds) for e in all_species])
+        return d
