@@ -1,6 +1,8 @@
 import re
 from setuptools import setup, find_packages
 
+from emitcalc import __version__
+
 # Note: using pip.req.parse_requirements like so:
 #  > REQUIREMENTS = [str(ir.req) for ir in parse_requirements('requirements.txt')]
 # results in the folloing error on Heroku:
@@ -26,7 +28,7 @@ test_requirements = parse_requirements(dependency_links, 'requirements-test.txt'
 
 setup(
     name='emitcalc',
-    version='0.1.10',
+    version=__version__,
     license='MIT',
     author='Joel Dubowy',
     author_email='jdubowy@gmail.com',
