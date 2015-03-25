@@ -1,3 +1,3 @@
 git+https://github.com/pnwairfire/pyairfire@v0.6.14
-git+https://github.com/pnwairfire/fccs2ef@v0.3.8
+git+https://github.com/pnwairfire/eflookup@v0.4.0
 numpy

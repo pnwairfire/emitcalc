@@ -133,14 +133,14 @@ fuelbeds 1 and 10 (FERA cover types 13 and 130). You could use an instance of
 Fccs2Ef as your lookup object:
 
     >>> from emitcalc.calculator import EmissionsCalculator
-    >>> from fccs2ef.lookup import Fccs2Ef
+    >>> from eflookup.fccs2ef.lookup import Fccs2Ef
     >>> calculator = EmissionsCalculator(Fccs2Ef())
     >>> calculator.calculate(['1','10'], consume_output, True)
 
 or you could use CoverType2Ef:
 
     >>> from emitcalc.calculator import EmissionsCalculator
-    >>> from fccs2ef.lookup import CoverType2Ef
+    >>> from eflookup.fccs2ef.lookup import CoverType2Ef
     >>> calculator = EmissionsCalculator(CoverType2Ef())
     >>> calculator.calculate(['13', '130'], consume_output, True)
 

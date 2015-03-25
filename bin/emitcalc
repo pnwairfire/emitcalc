@@ -17,7 +17,7 @@ import traceback
 from pyairfire import scripting
 
 from emitcalc.calculator import EmissionsCalculator
-from fccs2ef.lookup import Fccs2Ef
+from eflookup.fccs2ef.lookup import Fccs2Ef
 
 # Note: though some argue that all required parameters should be specified as
 # positional arguments, I prefer using 'options' flags, even though this
