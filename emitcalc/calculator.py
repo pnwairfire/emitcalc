@@ -10,35 +10,18 @@ __all__ = [
 
 class EmissionsCalculator(object):
 
-    def __init__(self, ef_lookup, **options):
+    def __init__(self, **options):
         """EmissionsCalculator constructor
-
-        Arguments:
-         - ef_lookup - ef look-up dict or object (see note below)
 
         Options:
          - silent_fail - if any emissions calculations fails, or if subset of
            data is invalid, simply skip a exclude related emissions from output
          - species - whitelist of species to compute emissions for
-
-        Note:  ef_lookup can be a simple dict or something like an instance
-        of fccs2ef.lookup.Fccs2Ef.  It just needs to support __getitem___, and
-        given an FCCS id or covertype id (or whatever id you're using to look up
-        emissions factors), return an dictionary of the following form:
-
-            {
-                'flame_smold_wf': { 'CH3CH2OH': 123.23, ... },
-                'flame_smold_rx': {...},
-                'woody_rsc': {...},
-                'duff_rsc': {...}
-            }
         """
-        self._ef_lookup = ef_lookup
         self._silent_fail = options.get('silent_fail')
         self._species_whitelist = set(options.get('species', []))
 
     ERROR_MESSAGES = {
-        "EF_LOOKUP_FAILURE": "Failed to look up emissions factors for %s",
         "MISSING_KEYS": "Missing keys in %s %s: %s",
         'DATA_LENGTH_MISMATCH': "Number of combustion values doesn't match "
             "number of fuelbeds / cover types"
@@ -66,14 +49,29 @@ class EmissionsCalculator(object):
     ## Public Interface
     ##
 
-    def calculate(self, ef_lookup_ids, consumption_dict, is_rx):
+    def calculate(self, ef_lookup_objects, consumption_dict, is_rx):
         """Calculates emissions given consume output
 
         Arguments
-         - ef_lookup_ids -- array of either FCCS ids or FERA cover type ids,
-            depending on the ef_lookup object passed to the constructor
+         - ef_lookup_objects -- array of emission factor lookup objects
          - consumption_dict -- dictionary of consume output  (see note below)
          - is_rx -- is a prescribed burn, as opposed to being a wild fire
+
+        TODO: support ef_lookup_objects being either an array of lookup objects
+        or a single object (in the case where it's the same for all values in
+        each of the consumption arrays)
+
+        Note: each of the objects in ef_lookup_objects can be a simple dict
+        or an object.  It just needs to support __getitem___, and be equivalent
+        to a dictionary of the following structure:
+
+            {
+                'flame_smold_wf': { 'CH3CH2OH': 123.23, ... },
+                'flame_smold_rx': {...},
+                'woody_rsc': {...},
+                'duff_rsc': {...}
+            }
+
 
         Note: consumption_dict is expected to be of the following form:
 
@@ -168,8 +166,8 @@ class EmissionsCalculator(object):
         # method signatures.  Each time calculate is called, they are reset,
         # since calcualte could be called on a different set of fuelbed ids
         self.flaming_smoldering_key = 'flame_smold_rx' if is_rx else 'flame_smold_wf'
-        self.ef_sets = self._get_ef_sets(ef_lookup_ids)
-        self.num_fuelbeds = len(self.ef_sets)
+        self.ef_lookup_objects = ef_lookup_objects
+        self.num_fuelbeds = len(self.ef_lookup_objects)
         output_species = self._get_output_species()
         self.species_by_ef_group = self._species_sets_by_ef_group()
 
@@ -196,7 +194,7 @@ class EmissionsCalculator(object):
                     k = rsc_key if 'residual' == combustion_phase else self.flaming_smoldering_key
                     for i in xrange(self.num_fuelbeds):
                         for species in output_species[i][k]:
-                            ef = self.ef_sets[i][k][species]
+                            ef = self.ef_lookup_objects[i][k][species]
                             e_sc_dict[combustion_phase][species][i] = ef * sc_dict[combustion_phase][i]
 
                 e_c_dict[sub_category] = e_sc_dict
@@ -238,16 +236,9 @@ class EmissionsCalculator(object):
     ## Emission Factors and Chemical Species
     ##
 
-    def _get_ef_sets(self, ef_lookup_ids):
-        try:
-            ef_sets = [self._ef_lookup[eid] for eid in ef_lookup_ids]
-        except KeyError, e:
-            raise KeyError(self.ERROR_MESSAGES["EF_LOOKUP_FAILURE"] % (e))
-        return ef_sets
-
     def _get_output_species(self):
         d = []
-        for ef_set in self.ef_sets:
+        for ef_set in self.ef_lookup_objects:
             d.append({})
             for k in ['woody_rsc', 'duff_rsc', self.flaming_smoldering_key]:
                 if self._species_whitelist:
@@ -270,7 +261,7 @@ class EmissionsCalculator(object):
         fuelbeds for a particular EF group.
         """
         species = []
-        for ef_set in self.ef_sets:
+        for ef_set in self.ef_lookup_objects:
             for ef_group_key in ef_group_keys:
                 species.extend(ef_set[ef_group_key].keys())
         species = set(species)

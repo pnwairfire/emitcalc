@@ -260,23 +260,6 @@ def assert_results_are_approximately_equal(expected, actual):
 
 class TestEmissionsCalculator:
 
-    # Error cases that raise exception:
-
-    def test_missing_efs(self):
-        consume_output = {
-            "litter-lichen-moss": {
-                "litter": { # <-- Missing 'flaming'
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 0.34],
-                    "residual": [0.0, 0.0]
-                }
-            }
-        }
-        with raises(KeyError) as e:
-            # No EFs for '13sdf'
-            EmissionsCalculator(LOOK_UP).calculate(['13sdf', '130'],
-                consume_output, True)
-
     # Error cases that raise exception unless silent_fail=True:
 
     def test_differing_number_of_consumption_values(self):
@@ -286,10 +269,11 @@ class TestEmissionsCalculator:
             }
         }
         with raises(ValueError) as e:
-             EmissionsCalculator(LOOK_UP).calculate(['13', '130'],
+             EmissionsCalculator().calculate([LOOK_UP['13'], LOOK_UP['130']],
                 consume_output, True)
-        calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
-        emissions = calculator.calculate(['13', '130'], consume_output, True)
+        calculator = EmissionsCalculator(silent_fail=True)
+        emissions = calculator.calculate([LOOK_UP['13'], LOOK_UP['130']],
+            consume_output, True)
         # Flaming dict should have been skipped, so
         expected = {
             'ground fuels': {
@@ -311,8 +295,9 @@ class TestEmissionsCalculator:
                 "basal accumulations": BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_CONSUME_OUT
             }
         }
-        calculator = EmissionsCalculator(LOOK_UP)
-        emissions = calculator.calculate(['13', '130'], consume_output, True)
+        calculator = EmissionsCalculator()
+        emissions = calculator.calculate([LOOK_UP['13'], LOOK_UP['130']],
+            consume_output, True)
         expected = {
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
@@ -339,8 +324,8 @@ class TestEmissionsCalculator:
                 "total": DUMMY_SUMMARY_CONSUME_OUT
             }
         }
-        calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
-        emissions = calculator.calculate(['13'], consume_output, True)
+        calculator = EmissionsCalculator(silent_fail=True)
+        emissions = calculator.calculate([LOOK_UP['13']], consume_output, True)
         expected = {
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED
@@ -365,8 +350,8 @@ class TestEmissionsCalculator:
                 "total": DUMMY_SUMMARY_CONSUME_OUT
             }
         }
-        calculator = EmissionsCalculator(LOOK_UP, silent_fail=True)
-        emissions = calculator.calculate(['13', '130'], consume_output, True)
+        calculator = EmissionsCalculator(silent_fail=True)
+        emissions = calculator.calculate([LOOK_UP['13'], LOOK_UP['130']], consume_output, True)
         expected = {
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED
@@ -395,8 +380,10 @@ class TestEmissionsCalculator:
                 "total": DUMMY_SUMMARY_CONSUME_OUT
             }
         }
-        calculator = EmissionsCalculator(LOOK_UP_DIFFERING)
-        emissions = calculator.calculate(['13', '130'], consume_output, True)
+        calculator = EmissionsCalculator()
+        emissions = calculator.calculate(
+            [LOOK_UP_DIFFERING['13'], LOOK_UP_DIFFERING['130']],
+            consume_output, True)
         # TODO: hand compute these values to make sure they're correct
         expected = {
             'ground fuels': {
@@ -431,8 +418,10 @@ class TestEmissionsCalculator:
                 "total": DUMMY_SUMMARY_CONSUME_OUT
             }
         }
-        calculator = EmissionsCalculator(LOOK_UP_DIFFERING, species=['CO', 'PM2.5', 'FDF'])
-        emissions = calculator.calculate(['13', '130'], consume_output, True)
+        calculator = EmissionsCalculator(species=['CO', 'PM2.5', 'FDF'])
+        emissions = calculator.calculate(
+            [LOOK_UP_DIFFERING['13'], LOOK_UP_DIFFERING['130']],
+            consume_output, True)
         # TODO: hand compute these values to make sure they're correct
         expected = {
             'ground fuels': {
