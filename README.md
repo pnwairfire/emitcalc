@@ -57,10 +57,10 @@ it means you need in upgrade pip.  One way to do so is with the following:
 
 ### Using emitcalc.calculator.EmissionsCalculator
 
-EmissionsCalculator is constructed with an emissions factor lookup object
-(or dictionary), and then passed the output of consume to calculate emissions.
-It produces emissions values for all possible combinations of fuel category,
-combustion phase, and chemical species.
+EmissionsCalculator is passed the output of consume to calculate emissions
+along with emission factor lookup objects (one for each set of consumption
+values). It produces emissions values for all possible combinations of fuel
+category, combustion phase, and chemical species.
 
 For example, assume you have the following (pruned) output from consume:
 
@@ -129,22 +129,25 @@ For example, assume you have the following (pruned) output from consume:
         }
 
 Now, let's say the consumption was for an Rx burn on land representing FCCS
-fuelbeds 1 and 10 (FERA cover types 13 and 130). You could use an instance of
-Fccs2Ef as your lookup object:
+fuelbeds 1 and 10 (FERA cover types 13 and 130). You could use Fccs2Ef to produce
+as your two lookup objects:
 
     >>> from emitcalc.calculator import EmissionsCalculator
     >>> from eflookup.fccs2ef.lookup import Fccs2Ef
-    >>> calculator = EmissionsCalculator(Fccs2Ef())
-    >>> calculator.calculate(['1','10'], consume_output, True)
+    >>> fccs2ef = Fccs2Ef()
+    >>> calculator = EmissionsCalculator()
+    >>> calculator.calculate([fccs2ef['1'],fccs2ef['10']], consume_output, True)
 
 or you could use CoverType2Ef:
 
     >>> from emitcalc.calculator import EmissionsCalculator
     >>> from eflookup.fccs2ef.lookup import CoverType2Ef
-    >>> calculator = EmissionsCalculator(CoverType2Ef())
-    >>> calculator.calculate(['13', '130'], consume_output, True)
+    >>> ct2ef = CoverType2Ef()
+    >>> calculator = EmissionsCalculator()
+    >>> calculator.calculate([ct2ef['13'], ct2ef['130']], consume_output, True)
 
-or you could use a dict (in this case, using with cover type ids as the keys):
+or you could use a dict (in this case, using with cover type ids as the keys),
+passing in the nested dicts to calculate:
 
     >>> from emitcalc.calculator import EmissionsCalculator
     >>> look_up = {
@@ -161,8 +164,8 @@ or you could use a dict (in this case, using with cover type ids as the keys):
                 'duff_rsc': {'CO2': 3.23,'CO': 120.0}
             }
         }
-    >>> calculator = EmissionsCalculator(look_up)
-    >>> calculator.calculate(['13','130'], consume_output, True)
+    >>> calculator = EmissionsCalculator()
+    >>> calculator.calculate([look_up['13'],look_up['130']], consume_output, True)
 
 The emissions calculator will produce values for whatever chemical species are
 represented in the lookup object.  So, for example, using ```look_up```, you'd
@@ -381,8 +384,8 @@ following example illustrates this:
                 'duff_rsc': {'CO': 120.0}
             }
         }
-    >>> calculator = EmissionsCalculator(look_up)
-    >>> calculator.calculate(['13','130'], consume_output, True)
+    >>> calculator = EmissionsCalculator()
+    >>> calculator.calculate([look_up['13'],look_up['130']], consume_output, True)
 
     {
         'ground fuels': {
@@ -558,15 +561,7 @@ than raise an exception.  The calculator is instantiated in
 ```silent_fail``` like this:
 
     >>> from emitcalc.calculator import EmissionsCalculator
-    >>> look_up = {
-         '13': {
-                'flame_smold_wf': {'CO': 14.0,'PM10': 15.2},
-                'flame_smold_rx': {'CO2': 140.23,'PM2.5': 15.2},
-                'woody_rsc': {'CO': 140.0,'NM': 23.0},
-                'duff_rsc': {'CO2': 4.55}
-            }
-        }
-    >>> calculator = EmissionsCalculator(look_up, silent_fail=True)
+    >>> calculator = EmissionsCalculator(silent_fail=True)
 
 #### Species Whitelist
 
@@ -575,12 +570,4 @@ compute emissions by instantiating the calculator with the ```species```
 option.  For example, to only compute CO2 and PM2.5 levels:
 
     >>> from emitcalc.calculator import EmissionsCalculator
-    >>> look_up = {
-         '13': {
-                'flame_smold_wf': {'CO': 14.0,'PM10': 15.2},
-                'flame_smold_rx': {'CO2': 140.23,'PM2.5': 15.2},
-                'woody_rsc': {'CO': 140.0,'NM': 23.0},
-                'duff_rsc': {'CO2': 4.55}
-            }
-        }
-    >>> calculator = EmissionsCalculator(look_up, species=['CO2', 'PM2.5'])
+    >>> calculator = EmissionsCalculator(species=['CO2', 'PM2.5'])
