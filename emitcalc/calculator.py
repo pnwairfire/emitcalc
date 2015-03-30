@@ -8,54 +8,45 @@ __all__ = [
     'EmissionsCalculator'
 ]
 
+class InvalidConsumptionDataError(ValueError):
+    pass
+
 class EmissionsCalculator(object):
 
-    def __init__(self, **options):
+    def __init__(self, ef_lookup_objects, **options):
         """EmissionsCalculator constructor
+
+        Args:
+         - ef_lookup_objects -- either an array of lookup objects or a single one
 
         Options:
          - silent_fail - if any emissions calculations fails, or if subset of
            data is invalid, simply skip a exclude related emissions from output
          - species - whitelist of species to compute emissions for
         """
-        self._silent_fail = options.get('silent_fail')
         self._species_whitelist = set(options.get('species', []))
+        self._silent_fail = options.get('silent_fail')
+        self._ef_lookup_objects = ef_lookup_objects
+        self._set_output_species()
 
     ERROR_MESSAGES = {
-        "MISSING_KEYS": "Missing keys in %s %s: %s",
-        'DATA_LENGTH_MISMATCH': "Number of combustion values doesn't match "
-            "number of fuelbeds / cover types"
-    }
-
-    # TODO: check these!!!
-    # TODO: expect different keys???
-    RSC_KEYS = {
-        "100-hr fuels": 'woody_rsc',
-        "1000-hr fuels sound": 'woody_rsc',
-        "1000-hr fuels rotten": 'woody_rsc',
-        "10k+-hr fuels rotten": 'woody_rsc',
-        "10k+-hr fuels sound": 'woody_rsc',
-        "10000-hr fuels rotten": 'woody_rsc',
-        "-hr fuels sound": 'woody_rsc',
-        "stumps rotten": 'woody_rsc',
-        "stumps lightered": 'woody_rsc',
-        "duff lower": 'duff_rsc',
-        "duff upper": 'duff_rsc',
-        "basal accumulations": 'duff_rsc',
-        "squirrel middens": 'duff_rsc'
+        "INVALID_INPUT_TOP_LEVEL": "Invalid consumption data",
+        "INVALID_INPUT_CATEGORY": "Invalid consumption data category - %s",
+        "INVALID_INPUT_SUB_CATEGORY": "Invalid consumption data sub-category - %s > %s",
+        'INVALID_INPUT_DATA_LENGTH_MISMATCH': "Number of combustion values "
+            "doesn't match number of fuelbeds / cover types - %s > %s > %s "
     }
 
     ##
     ## Public Interface
     ##
 
-    def calculate(self, ef_lookup_objects, consumption_dict, is_rx):
+    def calculate(self, consumption_dict):
         """Calculates emissions given consume output
 
         Arguments
          - ef_lookup_objects -- array of emission factor lookup objects
          - consumption_dict -- dictionary of consume output  (see note below)
-         - is_rx -- is a prescribed burn, as opposed to being a wild fire
 
         TODO: support ef_lookup_objects being either an array of lookup objects
         or a single object (in the case where it's the same for all values in
@@ -160,42 +151,19 @@ class EmissionsCalculator(object):
                 /* possibly other keys, which are ignored */
             }
         """
-        # TODO: make more fault tolerant
-
-        # The folloing are set as intance attributes to reduce data passed in
-        # method signatures.  Each time calculate is called, they are reset,
-        # since calcualte could be called on a different set of fuelbed ids
-        self.flaming_smoldering_key = 'flame_smold_rx' if is_rx else 'flame_smold_wf'
-        self.ef_lookup_objects = ef_lookup_objects
-        self.num_fuelbeds = len(self.ef_lookup_objects)
-        output_species = self._get_output_species()
-        self.species_by_ef_group = self._species_sets_by_ef_group()
+        self._prune_and_validate(consumption_dict)
 
         emissions = {}
         for category, c_dict in consumption_dict.items():
-            if not self._is_valid_category(category):
-                continue
-
             e_c_dict = {}
             for sub_category, sc_dict in c_dict.items():
-                # Sub-categories don't use the same residual EFs. Some use
-                # woody_rsc, some use duff_rsc, and some have not residual
-                # emissions
-                rsc_key = self.RSC_KEYS.get(sub_category)
-                # Initialize emissions sub-category dict
                 e_sc_dict = self._initialize_emissions_inner_dict()
-                for combustion_phase, cp_array in sc_dict.items():
-                    if not self._is_valid_combustion_phase(combustion_phase,
-                            cp_array):
-                        continue
-                    if 'residual' == combustion_phase and not rsc_key:
-                        continue
-
-                    k = rsc_key if 'residual' == combustion_phase else self.flaming_smoldering_key
+                for phase, cp_array in sc_dict.items():
                     for i in xrange(self.num_fuelbeds):
-                        for species in output_species[i][k]:
-                            ef = self.ef_lookup_objects[i][k][species]
-                            e_sc_dict[combustion_phase][species][i] = ef * sc_dict[combustion_phase][i]
+                        look_up = self._ef_lookup_object(i)
+                        for species in self._output_species[i][phase]:
+                            ef = look_up.get(phase=phase, fuel_category=sub_category, species=species)
+                            e_sc_dict[phase][species][i] = ef * sc_dict[phase][i]
 
                 e_c_dict[sub_category] = e_sc_dict
             if e_c_dict:
@@ -236,38 +204,27 @@ class EmissionsCalculator(object):
     ## Emission Factors and Chemical Species
     ##
 
-    def _get_output_species(self):
-        d = []
-        for ef_set in self.ef_lookup_objects:
-            d.append({})
-            for k in ['woody_rsc', 'duff_rsc', self.flaming_smoldering_key]:
+    def _ef_lookup_object(self, i):
+        if hasattr(self._ef_lookup_objects, 'species'):
+            # self._ef_lookup_objects is the object, not an array of objects
+            return self._ef_lookup_objects
+        else:
+            return self._ef_lookup_objects[i]
+
+    def _set_output_species(self):
+        self._output_species = []
+        for look_up_object in self._ef_lookup_objects:
+            self._output_species.append({})
+            for k in ['flaming', 'smoldering', 'residual']:
                 if self._species_whitelist:
-                    d[-1][k] = self._species_whitelist.intersection(ef_set[k].keys())
+                    self._output_species[-1][k] = self._species_whitelist.intersection(look_up_object.species(k))
                 else:
-                    d[-1][k] = ef_set[k].keys()
-        return d
+                    self._output_species[-1][k] = look_up_object.species(k)
 
-    def _species_sets_by_ef_group(self):
-        """Returns the cumulative set of checmical species accross all
-        fuelbeds for each of the EF group.
-        """
-        return {
-            'flaming_smoldering': self._species_set(self.flaming_smoldering_key),
-            'residual': self._species_set('woody_rsc', 'duff_rsc')
+        self._species_by_phase = {
+            k: reduce(lambda a, b: a.union(b), [os[k] for os in self._output_species])
+                for k in ['flaming', 'smoldering', 'residual']
         }
-
-    def _species_set(self, *ef_group_keys):
-        """Returns the cumulative set of checmical species accross all
-        fuelbeds for a particular EF group.
-        """
-        species = []
-        for ef_set in self.ef_lookup_objects:
-            for ef_group_key in ef_group_keys:
-                species.extend(ef_set[ef_group_key].keys())
-        species = set(species)
-        if self._species_whitelist:
-            species = self._species_whitelist.intersection(species)
-        return species
 
     ##
     ## Data Validation
@@ -277,21 +234,70 @@ class EmissionsCalculator(object):
         'debug',
         'summary'
     }
-    def _is_valid_category(self, category):
-        return category not in self.CATEGORIES_TO_SKIP
+    VALID_PHASES = {
+        'flaming',
+        'smoldering',
+        'residual'
+    }
+    def _prune_and_validate(self, consumption_dict):
+        """Removes unecessary fields from the consume output dict, and checks
+        that what's required is there and valid.
 
-    VALID_COMBUSTION_PHASES = set(['flaming', 'smoldering', 'residual'])
-    def _is_valid_combustion_phase(self, combustion_phase, cp_array):
-        if combustion_phase not in self.VALID_COMBUSTION_PHASES:
-            return False
+        This method also sets self.num_fuelbeds
 
-        if len(cp_array) != self.num_fuelbeds:
-            msg = self.ERROR_MESSAGES['DATA_LENGTH_MISMATCH']
-            if not self._silent_fail:
-                raise ValueError(msg)
-            logging.info('%s -- Skipping' % (msg))
-            return False
-        return True
+        TODO:
+         - break this method up into smaller ones
+        """
+        if not hasattr(self._ef_lookup_objects, 'species'):
+            self.num_fuelbeds = len(self._ef_lookup_objects)
+
+        if not hasattr(consumption_dict, 'items') or 0 == len(consumption_dict.items()):
+            raise InvalidConsumptionDataError(
+                self.ERROR_MESSAGES['INVALID_INPUT_TOP_LEVEL'])
+
+        for category, c_dict in consumption_dict.items():
+            if category in self.CATEGORIES_TO_SKIP:
+                logging.info('Ignoring category %s', category)
+                consumption_dict.pop(category)
+                continue
+
+            if not hasattr(c_dict, 'items') or 0 == len(c_dict.items()):
+                if self._silent_fail:
+                    logging.info('Ignoring category %s', category)
+                    consumption_dict.pop(category)
+                    continue
+                else:
+                    raise InvalidConsumptionDataError(
+                        self.ERROR_MESSAGES['INVALID_INPUT_CATEGORY'] % (category))
+
+            for sub_category, sc_dict in c_dict.items():
+                if not hasattr(sc_dict, 'items') or 0 == len(sc_dict.items()):
+                    if self._silent_fail:
+                        logging.info('Ignoring sub-category %s', sub_category)
+                        c_dict.pop(sub_category)
+                        continue
+                    else:
+                        raise InvalidConsumptionDataError(
+                            self.ERROR_MESSAGES['INVALID_INPUT_SUB_CATEGORY'] % (
+                            category, sub_category))
+
+                for phase, p_array in sc_dict.items():
+                    if phase not in self.VALID_PHASES:
+                        logging.info('Ignoring phase %s', phase)
+                        sc_dict.pop(phase)
+                        continue
+
+                    p_array_len = len(list(p_array))
+                    self.num_fuelbeds = self.num_fuelbeds or p_array_len
+                    if p_array_len == 0 or p_array_len != self.num_fuelbeds:
+                        if self._silent_fail:
+                            logging.info('Ignoring sub-category %s', phase)
+                            sc_dict.pop(phase)
+                            continue
+                        else:
+                            raise InvalidConsumptionDataError(
+                                self.ERROR_MESSAGES['INVALID_INPUT_DATA_LENGTH_MISMATCH'] % (
+                                category, sub_category, phase))
 
     ##
     ## Data Initialization
@@ -303,14 +309,13 @@ class EmissionsCalculator(object):
         sets of chemical species for the various fuelbeds, each emissions
         array will be the same length).
         """
-        fs_species = self.species_by_ef_group['flaming_smoldering']
-        r_species = self.species_by_ef_group['residual']
         d = {
-            'flaming': dict([(e, [0.0] * self.num_fuelbeds) for e in fs_species]),
-            'smoldering': dict([(e, [0.0] * self.num_fuelbeds) for e in fs_species]),
-            'residual': dict([(e, [0.0] * self.num_fuelbeds) for e in r_species])
+            k: dict([(e, [0.0] * self.num_fuelbeds) for e in self._species_by_phase[k]])
+                for k in ['flaming', 'smoldering', 'residual']
         }
         if include_total:
-            all_species = r_species.union(fs_species)
-            d['total'] = dict([(e, [0.0] * self.num_fuelbeds) for e in all_species])
+            all_species = reduce(lambda a, b: a.union(b),
+                self._species_by_phase.values())
+            d['total'] = dict([(e, [0.0] * self.num_fuelbeds)
+                for e in all_species])
         return d

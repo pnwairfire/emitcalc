@@ -17,7 +17,7 @@ import traceback
 from pyairfire import scripting
 
 from emitcalc.calculator import EmissionsCalculator
-from eflookup.fccs2ef.lookup import Fccs2Ef
+from eflookup.fepsef.lookup import FepsEF
 
 # Note: though some argue that all required parameters should be specified as
 # positional arguments, I prefer using 'options' flags, even though this
@@ -27,18 +27,10 @@ REQUIRED_OPTIONS = []
 
 OPTIONAL_OPTIONS = [
     {
-        'short': '-r',
-        'long': '--is-rx',
-        'dest': 'is_rx',
-        'help': 'is an rx burn',
-        'action': "store_true",
-        'default': False
-    },
-    {
         'short': '-i',
         'long': '--input-file',
         'dest': 'input_file',
-        'help': 'input file comtaining JSON formatted fire data',
+        'help': 'input file comtaining JSON formatted consume output',
         'action': "store",
         'default': None
     },
@@ -46,7 +38,7 @@ OPTIONAL_OPTIONS = [
         'short': '-o',
         'long': '--output-file',
         'dest': 'output_file',
-        'help': 'output file comtaining JSON formatted fire data',
+        'help': 'output file comtaining JSON formatted consomue output',
         'action': "store",
         'default': None
     }
@@ -63,17 +55,13 @@ def _stream(file_name, flag): #, do_strip_newlines):
 
 
 if __name__ == "__main__":
-    parser, options, fccs_ids = scripting.options.parse_options(REQUIRED_OPTIONS,
-        OPTIONAL_OPTIONS, usage="usage: %prog [options] <fccs_id>[,<fccs_id>[,...]]")
-
-    #scripting.options.check_required_options(options, REQUIRED_OPTIONS, parser)
-    scripting.options.configure_logging_from_options(options, parser)
-    scripting.options.output_options(options)
+    parser, args = scripting.args.parse_args(REQUIRED_ARGS,
+        OPTIONAL_ARGS, positional_args=POSITIONAL_ARGS)
 
     try:
         data = json.loads(''.join([d for d in _stream(options.input_file, 'r')]))
-        calculator = EmissionsCalculator(Fccs2Ef())
-        emissions = calculator.calculate(fccs_ids, data, options.is_rx)
+        calculator = EmissionsCalculator(FepsEF())
+        emissions = calculator.calculate(data)
         _stream(options.output_file, 'w').write(json.dumps(emissions))
 
     except Exception, e:
