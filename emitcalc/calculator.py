@@ -164,8 +164,12 @@ class EmissionsCalculator(object):
                     for i in xrange(self._num_fuelbeds):
                         look_up = self._ef_lookup_object(i)
                         for species in self._output_species_set(i)[phase]:
-                            ef = look_up.get(phase=phase, fuel_category=sub_category, species=species)
-                            e_sc_dict[phase][species][i] = ef * sc_dict[phase][i]
+                            ef = look_up.get(phase=phase,
+                                fuel_category=sub_category, species=species)
+                            # 'ef' may sometimes be undefined - e.g. for the
+                            # 'residual' phase for certain fuel categories
+                            if ef:
+                                e_sc_dict[phase][species][i] = ef * sc_dict[phase][i]
 
                 e_c_dict[sub_category] = e_sc_dict
             if e_c_dict:
