@@ -130,42 +130,54 @@ For example, assume you have the following (pruned) output from consume:
 
 Now, let's say the consumption was for an Rx burn on land representing FCCS
 fuelbeds 1 and 10 (FERA cover types 13 and 130). You could use Fccs2Ef to produce
-as your two lookup objects:
+your two lookup objects:
 
     >>> from emitcalc.calculator import EmissionsCalculator
-    >>> from eflookup.fccs2ef.lookup import Fccs2Ef
-    >>> fccs2ef = Fccs2Ef()
-    >>> calculator = EmissionsCalculator()
-    >>> calculator.calculate([fccs2ef['1'],fccs2ef['10']], consume_output, True)
+    >>> from eflookup.fccs2ef import Fccs2Ef
+    >>> fccs2ef = Fccs2Ef(is_rx=True)
+    >>> calculator = EmissionsCalculator([fccs2ef['1'],fccs2ef['10']])
+    >>> calculator.calculate(consume_output)
 
 or you could use CoverType2Ef:
 
     >>> from emitcalc.calculator import EmissionsCalculator
-    >>> from eflookup.fccs2ef.lookup import CoverType2Ef
-    >>> ct2ef = CoverType2Ef()
-    >>> calculator = EmissionsCalculator()
-    >>> calculator.calculate([ct2ef['13'], ct2ef['130']], consume_output, True)
+    >>> from eflookup.fccs2ef import CoverType2Ef
+    >>> ct2ef = CoverType2Ef(is_rx=True)
+    >>> calculator = EmissionsCalculator([ct2ef['13'], ct2ef['130']])
+    >>> calculator.calculate(consume_output)
 
-or you could use a dict (in this case, using with cover type ids as the keys),
-passing in the nested dicts to calculate:
+or you could use FEPS model, fuelbed agnostic EFs:
 
     >>> from emitcalc.calculator import EmissionsCalculator
-    >>> look_up = {
-            '13': {
-                'flame_smold_wf': {'CO2': 143.23,'CO': 14.0},
-                'flame_smold_rx': {'CO2': 140.23,'CO': 13.0},
-                'woody_rsc': {'CO2': 4.44,'CO': 140.0},
-                'duff_rsc': {'CO2': 4.55,'CO': 140.0}
-            },
-            '130': {
-                'flame_smold_wf': {'CO2': 123.23,'CO': 12.0},
-                'flame_smold_rx': {'CO2': 120.23,'CO': 10.0},
-                'woody_rsc': {'CO2': 3.23,'CO': 120.0},
-                'duff_rsc': {'CO2': 3.23,'CO': 120.0}
-            }
+    >>> from eflookup.fepsef import FepsEFLookup
+    >>> fepsef = FepsEFLookup()
+    >>> calculator = EmissionsCalculator(fepsef)
+    >>> calculator.calculate(consume_output)
+
+or you could use custom EF look-up object, build using eflookup's
+BasicEFLookup class:
+
+    >>> from eflookup.lookup import BasicEFLookup
+    >>> from emitcalc.calculator import EmissionsCalculator
+    >>> EFS = {
+        'flaming': {
+            'CO': 0.07179999999999997,
+        },
+        'residual': {
+            'PM10': 0.01962576,
+        },
+        'smoldering': {
+            'NH3': 0.00341056,
         }
-    >>> calculator = EmissionsCalculator()
-    >>> calculator.calculate([look_up['13'],look_up['130']], consume_output, True)
+    }
+    >>> look_up = BasicEFLookup(EFS)
+    >>> calculator = EmissionsCalculator(look_up)
+    >>> calculator.calculate(consume_output)
+
+Note that, in the FepsEFLookup and BasicEFLookup examples, the calculator was
+instantiated with a single lookup object instead of an array of fuelbed-specific
+lookup objects. This is valid in the case where emission factors don't vary from
+fuelbed to fuelbed,
 
 The emissions calculator will produce values for whatever chemical species are
 represented in the lookup object.  So, for example, using ```look_up```, you'd
@@ -175,158 +187,133 @@ get the following limited set of emissions:
         'ground fuels': {
             'basal accumulations': {
                 'flaming': {
-                    'CO': [0.006122514771744028,
-                        1.7999999999999998
-                    ],
-                    'CO2': [0.06604309588012808, 21.6414]
+                    'CO': [3.3815120047017005e-05,
+                        0.012923999999999995
+                    ]
                 },
                 'residual': {
-                    'CO': [0.3296738723246784, 2.4],
-                    'CO2': [0.010714400850552048, 0.0646]
+                    'PM10': [4.621500211796271e-05, 0.0003925152]
                 },
                 'smoldering': {
-                    'CO': [0.024490059086976112, 2.3000000000000003],
-                    'CO2': [0.2641723835205123, 27.652900000000002]
+                    'NH3': [6.424985839975172e-06, 0.0007844288]
                 }
             },
             'duff lower': {
                 'flaming': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'CO': [0.0, 0.0]
                 },
                 'residual': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'PM10': [0.0, 0.0]
                 },
                 'smoldering': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'NH3': [0.0, 0.0]
                 }
             }
         },
         'litter-lichen-moss': {
             'lichen': {
                 'flaming': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'CO': [0.0, 0.0]
                 },
                 'residual': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'PM10': [0.0, 0.0]
                 },
                 'smoldering': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'NH3': [0.0, 0.0]
                 }
             },
             'litter': {
                 'flaming': {
-                    'CO': [30.990960000000005, 11.0],
-                    'CO2': [334.2971016, 132.25300000000001]
+                    'CO': [0.17116545599999997, 0.07897999999999998]
                 },
                 'residual': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'PM10': [0.0, 0.0]
                 },
                 'smoldering': {
-                    'CO': [3.44344, 10.0],
-                    'CO2': [37.1441224, 120.23]
+                    'NH3': [0.0009033891328, 0.00341056]
                 }
             }
         },
         'summary': {
             'ground fuels': {
                 'flaming': {
-                    'CO': [0.006122514771744028,
-                        1.7999999999999998
-                    ],
-                    'CO2': [0.06604309588012808, 21.6414]
+                    'CO': [3.3815120047017005e-05,
+                        0.012923999999999995
+                    ]
                 },
                 'residual': {
-                    'CO': [0.3296738723246784, 2.4],
-                    'CO2': [0.010714400850552048, 0.0646]
+                    'PM10': [4.621500211796271e-05, 0.0003925152]
                 },
                 'smoldering': {
-                    'CO': [0.024490059086976112, 2.3000000000000003],
-                    'CO2': [0.2641723835205123, 27.652900000000002]
+                    'NH3': [6.424985839975172e-06, 0.0007844288]
                 }
             },
             'litter-lichen-moss': {
                 'flaming': {
-                    'CO': [30.990960000000005, 11.0],
-                    'CO2': [334.2971016, 132.25300000000001]
+                    'CO': [0.17116545599999997,
+                        0.07897999999999998
+                    ]
                 },
                 'residual': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'PM10': [0.0, 0.0]
                 },
                 'smoldering': {
-                    'CO': [3.44344, 10.0],
-                    'CO2': [37.1441224, 120.23]
+                    'NH3': [0.0009033891328, 0.00341056]
                 }
             },
             'total': {
                 'flaming': {
-                    'CO': [32.51078831032478, 13.899999999999999],
-                    'CO2': [350.69137267360327, 167.11970000000002]
+                    'CO': [0.1795595846677937, 0.09980199999999997]
                 },
                 'residual': {
-                    'CO': [41.08329144490614, 40.8],
-                    'CO2': [1.3031862724381356, 1.0982]
+                    'PM10': [0.005759220127912722, 0.006672758399999999]
                 },
                 'smoldering': {
-                    'CO': [5.738488752416514, 13.5],
-                    'CO2': [61.900636750105214, 162.3105]
+                    'NH3': [0.0015054969384185898, 0.004604256]
                 },
                 'total': {
-                    'CO': [79.33256850764742, 68.2],
-                    'CO2': [413.89519569614663, 330.5284]
+                    'CO': [0.1795595846677937, 0.09980199999999997],
+                    'NH3': [0.0015054969384185898, 0.004604256],
+                    'PM10': [0.005759220127912722, 0.006672758399999999]
                 }
             },
             'woody fuels': {
                 'flaming': {
-                    'CO': [1.5137057955530258, 1.1],
-                    'CO2': [16.328227977723138, 13.2253]
+                    'CO': [0.008360313547746709,
+                        0.007897999999999997
+                    ]
                 },
                 'residual': {
-                    'CO': [40.75361757258146, 38.4],
-                    'CO2': [1.2924718715875836, 1.0336]
+                    'PM10': [0.005713005125794759, 0.0062802432]
                 },
                 'smoldering': {
-                    'CO': [2.2705586933295385, 1.2],
-                    'CO2': [24.492341966584707, 14.4276]
+                    'NH3': [0.0005956828197786147, 0.00040926719999999996]
                 }
             }
         },
         'woody fuels': {
             '1000-hr fuels rotten': {
                 'flaming': {
-                    'CO': [1.5137057955530258,
-                        1.1
-                    ],
-                    'CO2': [16.328227977723138, 13.2253]
+                    'CO': [0.008360313547746709,
+                        0.007897999999999997
+                    ]
                 },
                 'residual': {
-                    'CO': [40.75361757258146, 38.4],
-                    'CO2': [1.2924718715875836, 1.0336]
+                    'PM10': [0.005713005125794759, 0.0062802432]
                 },
                 'smoldering': {
-                    'CO': [2.2705586933295385, 1.2],
-                    'CO2': [24.492341966584707, 14.4276]
+                    'NH3': [0.0005956828197786147, 0.00040926719999999996]
                 }
             },
             'stumps rotten': {
                 'flaming': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'CO': [0.0, 0.0]
                 },
                 'residual': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'PM10': [0.0, 0.0]
                 },
                 'smoldering': {
-                    'CO': [0.0, 0.0],
-                    'CO2': [0.0, 0.0]
+                    'NH3': [0.0, 0.0]
                 }
             }
         }
@@ -338,70 +325,67 @@ following example illustrates this:
 
 
     >>> consume_output = {
+        "litter-lichen-moss": {
+            "litter": {
+                "smoldering": [0.14949327591400063, 0.2],
+                "total": [1.4949327591400063, 0.34],
+                "flaming": [1.3454394832260057, 0.14],
+                "residual": [0.0, 0.0]
+            }
+        },
+        "ground fuels": {
+            "basal accumulations": {
+                "smoldering": [0.14949327591400063, 0.2],
+                "total": [1.4949327591400063, 1.34],
+                "flaming": [1.3454394832260057, 1.14],
+                "residual": [1.12, 0.32]
+            }
+        },
+        "summary": {
             "litter-lichen-moss": {
-                "litter": {
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 0.34],
-                    "flaming": [1.3454394832260057, 0.14],
-                    "residual": [0.0, 0.0]
-                }
+                "smoldering": [0.14949327591400063, 0.2],
+                "total": [1.4949327591400063, 1.34],
+                "flaming": [1.3454394832260057, 1.14],
+                "residual": [0.0, 0.0]
             },
             "ground fuels": {
-                "basal accumulations": {
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 1.34],
-                    "flaming": [1.3454394832260057, 1.14],
-                    "residual": [1.12, 0.32]
-                }
-            },
-            "summary": {
-                "litter-lichen-moss": {
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 1.34],
-                    "flaming": [1.3454394832260057, 1.14],
-                    "residual": [0.0, 0.0]
-                },
-                "ground fuels": {
-                    "smoldering": [0.14949327591400063, 0.2],
-                    "total": [1.4949327591400063, 1.34],
-                    "flaming": [1.3454394832260057, 1.14],
-                    "residual": [1.12, 0.32]
-                }
+                "smoldering": [0.14949327591400063, 0.2],
+                "total": [1.4949327591400063, 1.34],
+                "flaming": [1.3454394832260057, 1.14],
+                "residual": [1.12, 0.32]
             }
         }
+    }
     >>> from emitcalc.calculator import EmissionsCalculator
-    >>> look_up = {
-            '13': {
-                'flame_smold_wf': {'CO': 14.0,'PM10': 15.2},
-                'flame_smold_rx': {'CO2': 140.23,'PM2.5': 15.2},
-                'woody_rsc': {'CO': 140.0,'NM': 23.0},
-                'duff_rsc': {'CO2': 4.55}
-            },
-            '130': {
-                'flame_smold_wf': {'CO2': 123.23},
-                'flame_smold_rx': {'CO': 10.0},
-                'woody_rsc': {'CO2': 3.23,'FDF': 2.32},
-                'duff_rsc': {'CO': 120.0}
-            }
-        }
-    >>> calculator = EmissionsCalculator()
-    >>> calculator.calculate([look_up['13'],look_up['130']], consume_output, True)
+    >>> from eflookup.lookup import BasicEFLookup
+    >>> EFS_A = {
+        'flaming': {'CO': 14.0,'PM10': 15.2},
+        'smoldering': {'CO2': 140.23,'PM2.5': 15.2},
+        'residual': {'CO': 140.0,'NM': 23.0}
+    }
+    >>> EFS_B = {
+        'flaming': {'CO2': 123.23},
+        'smoldering': {'CO': 10.0},
+        'residual': {'CO2': 3.23,'FDF': 2.32}
+    }
+    >>> calculator = EmissionsCalculator([BasicEFLookup(EFS_A), BasicEFLookup(EFS_B)])
+    >>> calculator.calculate(consume_output)
 
     {
         'ground fuels': {
             'basal accumulations': {
                 'flaming': {
-                    'CO': [0.0,
-                        11.399999999999999
+                    'CO': [18.83615276516408,
+                        0.0
                     ],
-                    'CO2': [188.67097873278277, 0.0],
-                    'PM2.5': [20.450680145035285, 0.0]
+                    'CO2': [0.0, 140.4822],
+                    'PM10': [20.450680145035285, 0.0]
                 },
                 'residual': {
-                    'CO': [0.0, 38.4],
-                    'CO2': [5.096, 0.0],
-                    'FDF': [0.0, 0.0],
-                    'NM': [0.0, 0.0]
+                    'CO': [156.8, 0.0],
+                    'CO2': [0.0, 1.0336],
+                    'FDF': [0.0, 0.7424],
+                    'NM': [25.76, 0.0]
                 },
                 'smoldering': {
                     'CO': [0.0, 2.0],
@@ -413,9 +397,9 @@ following example illustrates this:
         'litter-lichen-moss': {
             'litter': {
                 'flaming': {
-                    'CO': [0.0, 1.4000000000000001],
-                    'CO2': [188.67097873278277, 0.0],
-                    'PM2.5': [20.450680145035285, 0.0]
+                    'CO': [18.83615276516408, 0.0],
+                    'CO2': [0.0, 17.252200000000002],
+                    'PM10': [20.450680145035285, 0.0]
                 },
                 'residual': {
                     'CO': [0.0, 0.0],
@@ -433,15 +417,15 @@ following example illustrates this:
         'summary': {
             'ground fuels': {
                 'flaming': {
-                    'CO': [0.0, 11.399999999999999],
-                    'CO2': [188.67097873278277, 0.0],
-                    'PM2.5': [20.450680145035285, 0.0]
+                    'CO': [18.83615276516408, 0.0],
+                    'CO2': [0.0, 140.4822],
+                    'PM10': [20.450680145035285, 0.0]
                 },
                 'residual': {
-                    'CO': [0.0, 38.4],
-                    'CO2': [5.096, 0.0],
-                    'FDF': [0.0, 0.0],
-                    'NM': [0.0, 0.0]
+                    'CO': [156.8, 0.0],
+                    'CO2': [0.0, 1.0336],
+                    'FDF': [0.0, 0.7424],
+                    'NM': [25.76, 0.0]
                 },
                 'smoldering': {
                     'CO': [0.0, 2.0],
@@ -451,9 +435,9 @@ following example illustrates this:
             },
             'litter-lichen-moss': {
                 'flaming': {
-                    'CO': [0.0, 1.4000000000000001],
-                    'CO2': [188.67097873278277, 0.0],
-                    'PM2.5': [20.450680145035285, 0.0]
+                    'CO': [18.83615276516408, 0.0],
+                    'CO2': [0.0, 17.252200000000002],
+                    'PM10': [20.450680145035285, 0.0]
                 },
                 'residual': {
                     'CO': [0.0, 0.0],
@@ -469,15 +453,15 @@ following example illustrates this:
             },
             'total': {
                 'flaming': {
-                    'CO': [0.0, 12.799999999999999],
-                    'CO2': [377.34195746556554, 0.0],
-                    'PM2.5': [40.90136029007057, 0.0]
+                    'CO': [37.67230553032816, 0.0],
+                    'CO2': [0.0, 157.7344],
+                    'PM10': [40.90136029007057, 0.0]
                 },
                 'residual': {
-                    'CO': [0.0, 38.4],
-                    'CO2': [5.096, 0.0],
-                    'FDF': [0.0, 0.0],
-                    'NM': [0.0, 0.0]
+                    'CO': [156.8, 0.0],
+                    'CO2': [0.0, 1.0336],
+                    'FDF': [0.0, 0.7424],
+                    'NM': [25.76, 0.0]
                 },
                 'smoldering': {
                     'CO': [0.0, 4.0],
@@ -485,16 +469,16 @@ following example illustrates this:
                     'PM2.5': [4.5445955877856195, 0.0]
                 },
                 'total': {
-                    'CO': [0.0, 55.199999999999996],
-                    'CO2': [424.36484162840617, 0.0],
-                    'FDF': [0.0, 0.0],
-                    'NM': [0.0, 0.0],
-                    'PM2.5': [45.44595587785619, 0.0]
+                    'CO': [194.47230553032819, 4.0],
+                    'CO2': [41.926884162840615, 158.768],
+                    'FDF': [0.0, 0.7424],
+                    'NM': [25.76, 0.0],
+                    'PM10': [40.90136029007057, 0.0],
+                    'PM2.5': [4.5445955877856195, 0.0]
                 }
             }
         }
     }
-
 
 Note from the above examples that the emissions calculator produces
 a 'summary' section.  The values in this section are computed from the
@@ -560,8 +544,8 @@ and skip any invalid consumption data that it encounters, rather
 than raise an exception.  The calculator is instantiated in
 ```silent_fail``` like this:
 
-    >>> from emitcalc.calculator import EmissionsCalculator
-    >>> calculator = EmissionsCalculator(silent_fail=True)
+    >>> ...
+    >>> calculator = EmissionsCalculator(look_up, silent_fail=True)
 
 #### Species Whitelist
 
@@ -569,5 +553,5 @@ You can specify a subset of chemical species for which the calulator should
 compute emissions by instantiating the calculator with the ```species```
 option.  For example, to only compute CO2 and PM2.5 levels:
 
-    >>> from emitcalc.calculator import EmissionsCalculator
-    >>> calculator = EmissionsCalculator(species=['CO2', 'PM2.5'])
+    >>> ...
+    >>> calculator = EmissionsCalculator(look_up, species=['CO2', 'PM2.5'])
