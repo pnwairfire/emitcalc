@@ -17,16 +17,26 @@ class EmissionsCalculator(object):
         """EmissionsCalculator constructor
 
         Args:
-         - ef_lookup_objects -- either an array of lookup objects or a single one
+         - ef_lookup_objects -- either an array of look-up objects or a
+           single one
 
         Options:
          - silent_fail - if any emissions calculations fails, or if subset of
            data is invalid, simply skip a exclude related emissions from output
          - species - whitelist of species to compute emissions for
+
+        Note: each look-up object must support the following interface:
+            get(phase=PHASE, fuel_category=FUEL_CATEGORY, species=SPECIES)
+            species(phase)
         """
         self._species_whitelist = set(options.get('species', []))
         self._silent_fail = options.get('silent_fail')
         self._ef_lookup_objects = ef_lookup_objects
+        if not hasattr(self._ef_lookup_objects, 'species'):
+            self._num_ef_look_up_objects = len(self._ef_lookup_objects)
+        else:
+            # used later to indicate that we need to use length of data arrays
+            self._num_ef_look_up_objects = None
         self._set_output_species()
 
     ERROR_MESSAGES = {
@@ -45,24 +55,7 @@ class EmissionsCalculator(object):
         """Calculates emissions given consume output
 
         Arguments
-         - ef_lookup_objects -- array of emission factor lookup objects
          - consumption_dict -- dictionary of consume output  (see note below)
-
-        TODO: support ef_lookup_objects being either an array of lookup objects
-        or a single object (in the case where it's the same for all values in
-        each of the consumption arrays)
-
-        Note: each of the objects in ef_lookup_objects can be a simple dict
-        or an object.  It just needs to support __getitem___, and be equivalent
-        to a dictionary of the following structure:
-
-            {
-                'flame_smold_wf': { 'CH3CH2OH': 123.23, ... },
-                'flame_smold_rx': {...},
-                'woody_rsc': {...},
-                'duff_rsc': {...}
-            }
-
 
         Note: consumption_dict is expected to be of the following form:
 
@@ -151,6 +144,7 @@ class EmissionsCalculator(object):
                 /* possibly other keys, which are ignored */
             }
         """
+        self._num_fuelbeds = self._num_ef_look_up_objects
         self._prune_and_validate(consumption_dict)
 
         emissions = {}
@@ -159,9 +153,9 @@ class EmissionsCalculator(object):
             for sub_category, sc_dict in c_dict.items():
                 e_sc_dict = self._initialize_emissions_inner_dict()
                 for phase, cp_array in sc_dict.items():
-                    for i in xrange(self.num_fuelbeds):
+                    for i in xrange(self._num_fuelbeds):
                         look_up = self._ef_lookup_object(i)
-                        for species in self._output_species[i][phase]:
+                        for species in self._output_species_set(i)[phase]:
                             ef = look_up.get(phase=phase, fuel_category=sub_category, species=species)
                             e_sc_dict[phase][species][i] = ef * sc_dict[phase][i]
 
@@ -205,26 +199,38 @@ class EmissionsCalculator(object):
     ##
 
     def _ef_lookup_object(self, i):
-        if hasattr(self._ef_lookup_objects, 'species'):
+        if self._num_ef_look_up_objects is None:
             # self._ef_lookup_objects is the object, not an array of objects
             return self._ef_lookup_objects
         else:
             return self._ef_lookup_objects[i]
 
+    def _output_species_set(self, i):
+        if self._num_ef_look_up_objects is None:
+            # self._ef_lookup_objects is the object, not an array of objects
+            return self._output_species
+        else:
+            return self._output_species[i]
+
     def _set_output_species(self):
-        self._output_species = []
-        for look_up_object in self._ef_lookup_objects:
-            self._output_species.append({})
+        def _one_set(look_up_object):
+            s = {}
             for k in ['flaming', 'smoldering', 'residual']:
                 if self._species_whitelist:
-                    self._output_species[-1][k] = self._species_whitelist.intersection(look_up_object.species(k))
+                    s[k] = self._species_whitelist.intersection(look_up_object.species(k))
                 else:
-                    self._output_species[-1][k] = look_up_object.species(k)
+                    s[k] = look_up_object.species(k)
+            return s
 
-        self._species_by_phase = {
-            k: reduce(lambda a, b: a.union(b), [os[k] for os in self._output_species])
-                for k in ['flaming', 'smoldering', 'residual']
-        }
+        if self._num_ef_look_up_objects is None:
+            self._output_species = _one_set(self._ef_lookup_objects)
+            self._species_by_phase = self._output_species
+        else:
+            self._output_species = [_one_set(efl) for efl in self._ef_lookup_objects]
+            self._species_by_phase = {
+                k: reduce(lambda a, b: a.union(b), [os[k] for os in self._output_species])
+                    for k in ['flaming', 'smoldering', 'residual']
+            }
 
     ##
     ## Data Validation
@@ -243,27 +249,24 @@ class EmissionsCalculator(object):
         """Removes unecessary fields from the consume output dict, and checks
         that what's required is there and valid.
 
-        This method also sets self.num_fuelbeds
+        This method also sets self._num_fuelbeds
 
         TODO:
          - break this method up into smaller ones
         """
-        if not hasattr(self._ef_lookup_objects, 'species'):
-            self.num_fuelbeds = len(self._ef_lookup_objects)
-
         if not hasattr(consumption_dict, 'items') or 0 == len(consumption_dict.items()):
             raise InvalidConsumptionDataError(
                 self.ERROR_MESSAGES['INVALID_INPUT_TOP_LEVEL'])
 
         for category, c_dict in consumption_dict.items():
             if category in self.CATEGORIES_TO_SKIP:
-                logging.info('Ignoring category %s', category)
+                logging.debug('Ignoring category %s', category)
                 consumption_dict.pop(category)
                 continue
 
             if not hasattr(c_dict, 'items') or 0 == len(c_dict.items()):
                 if self._silent_fail:
-                    logging.info('Ignoring category %s', category)
+                    logging.info('Skipping invalid category %s', category)
                     consumption_dict.pop(category)
                     continue
                 else:
@@ -273,7 +276,7 @@ class EmissionsCalculator(object):
             for sub_category, sc_dict in c_dict.items():
                 if not hasattr(sc_dict, 'items') or 0 == len(sc_dict.items()):
                     if self._silent_fail:
-                        logging.info('Ignoring sub-category %s', sub_category)
+                        logging.info('Skipping invalid sub-category %s', sub_category)
                         c_dict.pop(sub_category)
                         continue
                     else:
@@ -283,7 +286,7 @@ class EmissionsCalculator(object):
 
                 for phase, p_array in sc_dict.items():
                     if phase not in self.VALID_PHASES:
-                        logging.info('Ignoring phase %s', phase)
+                        logging.debug('Ignoring phase %s', phase)
                         sc_dict.pop(phase)
                         continue
 
@@ -296,8 +299,8 @@ class EmissionsCalculator(object):
                     except:
                         # p_array must not be a list or list-compatible
                         pass
-                    self.num_fuelbeds = self.num_fuelbeds or p_array_len
-                    if not p_array_len or p_array_len != self.num_fuelbeds:
+                    self._num_fuelbeds = self._num_fuelbeds or p_array_len
+                    if not p_array_len or p_array_len != self._num_fuelbeds:
                         if self._silent_fail:
                             logging.info('Ignoring sub-category %s', phase)
                             sc_dict.pop(phase)
@@ -318,12 +321,12 @@ class EmissionsCalculator(object):
         array will be the same length).
         """
         d = {
-            k: dict([(e, [0.0] * self.num_fuelbeds) for e in self._species_by_phase[k]])
+            k: dict([(e, [0.0] * self._num_fuelbeds) for e in self._species_by_phase[k]])
                 for k in ['flaming', 'smoldering', 'residual']
         }
         if include_total:
             all_species = reduce(lambda a, b: a.union(b),
                 self._species_by_phase.values())
-            d['total'] = dict([(e, [0.0] * self.num_fuelbeds)
+            d['total'] = dict([(e, [0.0] * self._num_fuelbeds)
                 for e in all_species])
         return d

@@ -328,8 +328,6 @@ class TestEmissionsCalculator:
                 "total": DUMMY_SUMMARY_CONSUME_OUT
             }
         }
-        calculator = EmissionsCalculator([LOOK_UP_RX_13], silent_fail=True)
-        emissions = calculator.calculate(consume_output)
         expected = {
             'ground fuels': {
                 'basal accumulations': BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED
@@ -339,6 +337,13 @@ class TestEmissionsCalculator:
                 'total': TOTAL_BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED
             }
         }
+        # passing in lookup in an array
+        calculator = EmissionsCalculator([LOOK_UP_RX_13], silent_fail=True)
+        emissions = calculator.calculate(consume_output)
+        assert_results_are_approximately_equal(expected, emissions)
+        # passing in lookup outside of an array
+        calculator = EmissionsCalculator(LOOK_UP_RX_13, silent_fail=True)
+        emissions = calculator.calculate(consume_output)
         assert_results_are_approximately_equal(expected, emissions)
 
     def test_basic_two_fuel_beds(self):
@@ -366,6 +371,8 @@ class TestEmissionsCalculator:
             }
         }
         assert_results_are_approximately_equal(expected, emissions)
+
+    # TODO: test_basic_two_fuel_beds_one_lookup_object
 
     def test_varying_chemical_species_two_fuel_beds(self):
         consume_output = {
