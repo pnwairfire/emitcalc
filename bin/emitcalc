@@ -17,15 +17,15 @@ import traceback
 from pyairfire import scripting
 
 from emitcalc.calculator import EmissionsCalculator
-from eflookup.fepsef.lookup import FepsEF
+from eflookup.fepsef import FepsEFLookup
 
 # Note: though some argue that all required parameters should be specified as
 # positional arguments, I prefer using 'options' flags, even though this
 # means that there are required 'options', which is oxymoronic.
 
-REQUIRED_OPTIONS = []
+REQUIRED_ARGS = []
 
-OPTIONAL_OPTIONS = [
+OPTIONAL_ARGS = [
     {
         'short': '-i',
         'long': '--input-file',
@@ -55,14 +55,13 @@ def _stream(file_name, flag): #, do_strip_newlines):
 
 
 if __name__ == "__main__":
-    parser, args = scripting.args.parse_args(REQUIRED_ARGS,
-        OPTIONAL_ARGS, positional_args=POSITIONAL_ARGS)
+    parser, args = scripting.args.parse_args(REQUIRED_ARGS, OPTIONAL_ARGS)
 
     try:
-        data = json.loads(''.join([d for d in _stream(options.input_file, 'r')]))
-        calculator = EmissionsCalculator(FepsEF())
+        data = json.loads(''.join([d for d in _stream(args.input_file, 'r')]))
+        calculator = EmissionsCalculator(FepsEFLookup())
         emissions = calculator.calculate(data)
-        _stream(options.output_file, 'w').write(json.dumps(emissions))
+        _stream(args.output_file, 'w').write(json.dumps(emissions))
 
     except Exception, e:
         logging.info(traceback.format_exc())
