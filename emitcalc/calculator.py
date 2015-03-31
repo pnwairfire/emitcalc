@@ -25,9 +25,18 @@ class EmissionsCalculator(object):
            data is invalid, simply skip a exclude related emissions from output
          - species - whitelist of species to compute emissions for
 
-        Note: each look-up object must support the following interface:
-            get(phase=PHASE, fuel_category=FUEL_CATEGORY, species=SPECIES)
-            species(phase)
+        Notes:
+         - each look-up object must support the following interface:
+           get(phase=PHASE, fuel_category=FUEL_CATEGORY, species=SPECIES)
+           species(phase)
+         - Note: self._num_ef_look_up_objects is used later to set
+           self._num_fuelbeds. If self._num_ef_look_up_objects is not None,
+           then self._num_fuelbeds is set to its value. Otherwise, a None value
+           indicates that we need to determine the number of fuelbeds from the
+           length of the inner data arrays. self._num_fuelbeds must be set on
+           each call to calcualte, since the number of fuelbeds in the
+           consumption data can vary from call to call (though, only in the
+           case where a single lookup object is used for all fuelbeds)
         """
         self._species_whitelist = set(options.get('species', []))
         self._silent_fail = options.get('silent_fail')
@@ -35,7 +44,6 @@ class EmissionsCalculator(object):
         if not hasattr(self._ef_lookup_objects, 'species'):
             self._num_ef_look_up_objects = len(self._ef_lookup_objects)
         else:
-            # used later to indicate that we need to use length of data arrays
             self._num_ef_look_up_objects = None
         self._set_output_species()
 
@@ -197,6 +205,10 @@ class EmissionsCalculator(object):
     ##
     ## Emission Factors and Chemical Species
     ##
+
+    # Note: these three methods - _ef_lookup_object, _output_species_set, and
+    # _set_output_species - are a bit hacky to handle either one look-up per
+    # fuelbed or one for all
 
     def _ef_lookup_object(self, i):
         if self._num_ef_look_up_objects is None:
