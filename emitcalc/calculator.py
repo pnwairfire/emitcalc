@@ -287,9 +287,17 @@ class EmissionsCalculator(object):
                         sc_dict.pop(phase)
                         continue
 
-                    p_array_len = len(list(p_array))
+                    p_array_len = None
+                    try:
+                        # TODO: make sure it's a list or numpy array, not just
+                        # that it can be caste to an list (since, for example,
+                        # a dict can be caste to an array)
+                        p_array_len = len(list(p_array))
+                    except:
+                        # p_array must not be a list or list-compatible
+                        pass
                     self.num_fuelbeds = self.num_fuelbeds or p_array_len
-                    if p_array_len == 0 or p_array_len != self.num_fuelbeds:
+                    if not p_array_len or p_array_len != self.num_fuelbeds:
                         if self._silent_fail:
                             logging.info('Ignoring sub-category %s', phase)
                             sc_dict.pop(phase)
