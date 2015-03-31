@@ -154,8 +154,8 @@ or you could use FEPS model, fuelbed agnostic EFs:
     >>> calculator = EmissionsCalculator(fepsef)
     >>> calculator.calculate(consume_output)
 
-or you could use custom EF look-up object, build using eflookup's
-BasicEFLookup class:
+or you could use a custom EF look-up object, which can be built using
+[eflookup's](https://github.com/pnwairfire/eflookup) BasicEFLookup class.
 
     >>> from eflookup.lookup import BasicEFLookup
     >>> from emitcalc.calculator import EmissionsCalculator
@@ -174,7 +174,13 @@ BasicEFLookup class:
     >>> calculator = EmissionsCalculator(look_up)
     >>> calculator.calculate(consume_output)
 
-Note that, in the FepsEFLookup and BasicEFLookup examples, the calculator was
+Note that any emission factor lookup class that supports the following
+interface can be used:
+
+    get(phase=PHASE, fuel_category=FUEL_CATEGORY, species=SPECIES)
+    species(phase) # returns all chemical species produced by the phase
+
+Also note that, in the FepsEFLookup and BasicEFLookup examples, the calculator was
 instantiated with a single lookup object instead of an array of fuelbed-specific
 lookup objects. This is valid in the case where emission factors don't vary from
 fuelbed to fuelbed,
