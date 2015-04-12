@@ -5,15 +5,24 @@ consume output.
 
 ## Development
 
+Via ssh:
+
+    git clone git@github.com:pnwairfire/emitcalc.git
+
+or http:
+
+    git clone https://github.com/pnwairfire/emitcalc.git
+
 ### Install Dependencies
 
 Run the following to install dependencies:
 
     pip install -r requirements.txt
 
-Run the following for installing development dependencies (like running tests):
+Run the following to install packages required for development and testing:
 
     pip install -r requirements-test.txt
+    pip install -r requirements-dev.txt
 
 ### Setup Environment
 
@@ -37,13 +46,13 @@ See [pytest](http://pytest.org/latest/getting-started.html#getstarted) for more 
 
 ### Installing With pip
 
-First, install pip:
+First, install pip (with sudo if necessary):
 
-    sudo apt-get install python-pip
+    apt-get install python-pip
 
-Then, to install, for example, v0.3.0, use the following:
+Then, to install, for example, v0.3.1, use the following (with sudo if necessary):
 
-    sudo pip install git+https://github.com/pnwairfire/emitcalc@v0.3.0
+    pip install --trusted-host pypi.smoke.airfire.org -i http://pypi.smoke.airfire.org/simple emitcalc==v0.3.1
 
 If you get an error like
 
