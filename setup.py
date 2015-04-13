@@ -32,7 +32,7 @@ setup(
     install_requires=[
         "pyairfire>=0.7.0",
         "eflookup>=0.6.2",
-        "numpy"
+        "numpy==1.8.0"
     ],
     dependency_links=[
         "https://pypi.smoke.airfire.org/simple/pyairfire/",
