@@ -1,4 +1,3 @@
-import re
 from setuptools import setup, find_packages
 
 from emitcalc import __version__
