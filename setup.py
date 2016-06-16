@@ -29,8 +29,8 @@ setup(
     url='https://github.com/pnwairfire/emitcalc',
     description='Package providing a calculator for computing emissions from consume output.',
     install_requires=[
-        "pyairfire>=0.7.0",
-        "eflookup>=0.6.2",
+        "pyairfire>=1.1.1",
+        "eflookup>=1.0.0",
         "numpy==1.8.0"
     ],
     dependency_links=[
