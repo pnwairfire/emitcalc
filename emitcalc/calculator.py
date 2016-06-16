@@ -2,6 +2,7 @@ __author__      = "Joel Dubowy"
 
 import logging
 from collections import defaultdict
+from functools import reduce
 
 __all__ = [
     'EmissionsCalculator'
@@ -155,12 +156,12 @@ class EmissionsCalculator(object):
         self._prune_and_validate(consumption_dict)
 
         emissions = {}
-        for category, c_dict in consumption_dict.items():
+        for category, c_dict in list(consumption_dict.items()):
             e_c_dict = {}
-            for sub_category, sc_dict in c_dict.items():
+            for sub_category, sc_dict in list(c_dict.items()):
                 e_sc_dict = self._initialize_emissions_inner_dict()
-                for phase, cp_array in sc_dict.items():
-                    for i in xrange(self._num_fuelbeds):
+                for phase, cp_array in list(sc_dict.items()):
+                    for i in range(self._num_fuelbeds):
                         look_up = self._ef_lookup_object(i)
                         for species in self._output_species_set(i)[phase]:
                             ef = look_up.get(phase=phase,
@@ -189,16 +190,16 @@ class EmissionsCalculator(object):
         summary = {
             'total': self._initialize_emissions_inner_dict(include_total=True)
         }
-        for category, e_c_dict in emissions.items():
+        for category, e_c_dict in list(emissions.items()):
             if not e_c_dict:
                 # empty due to no valid subcategories
                 continue
 
             summary[category] = self._initialize_emissions_inner_dict()
-            for sub_category, e_sc_dict in e_c_dict.items():
-                for phase, p_dict in e_sc_dict.items():
-                    for species, s_list in p_dict.items():
-                        for i in xrange(len(s_list)):
+            for sub_category, e_sc_dict in list(e_c_dict.items()):
+                for phase, p_dict in list(e_sc_dict.items()):
+                    for species, s_list in list(p_dict.items()):
+                        for i in range(len(s_list)):
                             val = s_list[i]
                             summary[category][phase][species][i] += val
                             summary['total'][phase][species][i] += val
@@ -269,17 +270,17 @@ class EmissionsCalculator(object):
         TODO:
          - break this method up into smaller ones
         """
-        if not hasattr(consumption_dict, 'items') or 0 == len(consumption_dict.items()):
+        if not hasattr(consumption_dict, 'items') or 0 == len(list(consumption_dict.items())):
             raise InvalidConsumptionDataError(
                 self.ERROR_MESSAGES['INVALID_INPUT_TOP_LEVEL'])
 
-        for category, c_dict in consumption_dict.items():
+        for category, c_dict in list(consumption_dict.items()):
             if category in self.CATEGORIES_TO_SKIP:
                 logging.debug('Ignoring category %s', category)
                 consumption_dict.pop(category)
                 continue
 
-            if not hasattr(c_dict, 'items') or 0 == len(c_dict.items()):
+            if not hasattr(c_dict, 'items') or 0 == len(list(c_dict.items())):
                 if self._silent_fail:
                     logging.info('Skipping invalid category %s', category)
                     consumption_dict.pop(category)
@@ -288,8 +289,8 @@ class EmissionsCalculator(object):
                     raise InvalidConsumptionDataError(
                         self.ERROR_MESSAGES['INVALID_INPUT_CATEGORY'] % (category))
 
-            for sub_category, sc_dict in c_dict.items():
-                if not hasattr(sc_dict, 'items') or 0 == len(sc_dict.items()):
+            for sub_category, sc_dict in list(c_dict.items()):
+                if not hasattr(sc_dict, 'items') or 0 == len(list(sc_dict.items())):
                     if self._silent_fail:
                         logging.info('Skipping invalid sub-category %s', sub_category)
                         c_dict.pop(sub_category)
@@ -299,7 +300,7 @@ class EmissionsCalculator(object):
                             self.ERROR_MESSAGES['INVALID_INPUT_SUB_CATEGORY'] % (
                             category, sub_category))
 
-                for phase, p_array in sc_dict.items():
+                for phase, p_array in list(sc_dict.items()):
                     if phase not in self.VALID_PHASES:
                         logging.debug('Ignoring phase %s', phase)
                         sc_dict.pop(phase)
@@ -341,7 +342,7 @@ class EmissionsCalculator(object):
         }
         if include_total:
             all_species = reduce(lambda a, b: a.union(b),
-                self._species_by_phase.values())
+                list(self._species_by_phase.values()))
             d['total'] = dict([(e, [0.0] * self._num_fuelbeds)
                 for e in all_species])
         return d

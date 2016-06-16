@@ -20,7 +20,7 @@ BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT = {
 }
 
 BASAL_ACCUMULATIONS_RX_13_CONSUME_OUT = dict([(k, v[:1]) for k,v in
-    BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT.items()])
+    list(BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT.items())])
 
 BASAL_ACCUMULATIONS_LEN_1_FLAMING_RX_13_130_CONSUME_OUT = copy.deepcopy(
     BASAL_ACCUMULATIONS_RX_13_130_CONSUME_OUT)
@@ -109,17 +109,17 @@ TOTAL_BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED["total"] = 
 }
 
 BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED = dict([
-    (k, dict([(k2, v2[:1]) for k2,v2 in  v.items()]))
-        for k,v in BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED.items()
+    (k, dict([(k2, v2[:1]) for k2,v2 in  list(v.items())]))
+        for k,v in list(BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED.items())
 ])
 TOTAL_BASAL_ACCUMULATIONS_RX_13_NORMAL_LOOKUP_EMISSIONS_EXPECTED = dict([
-    (k, dict([(k2, v2[:1]) for k2,v2 in  v.items()]))
-        for k,v in TOTAL_BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED.items()
+    (k, dict([(k2, v2[:1]) for k2,v2 in  list(v.items())]))
+        for k,v in list(TOTAL_BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED.items())
 ])
 
 BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED = copy.deepcopy(
     BASAL_ACCUMULATIONS_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED)
-for s, sa in BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED['flaming'].items():
+for s, sa in list(BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED['flaming'].items()):
     BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED['flaming'][s] = len(sa) * [0.0]
 TOTAL_BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED = copy.deepcopy(
     BASAL_ACCUMULATIONS_NO_FLAMING_RX_13_130_NORMAL_LOOKUP_EMISSIONS_EXPECTED)
@@ -194,22 +194,22 @@ TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPEC
 
 LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED = copy.deepcopy(
     LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED)
-for k,v in LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items():
-    for k2 in v.keys():
+for k,v in list(LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items()):
+    for k2 in list(v.keys()):
         if k2 not in ['CO','PM2.5','FDF']:
             v.pop(k2)
 
 BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED = copy.deepcopy(
     BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED)
-for k,v in BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items():
-    for k2 in v.keys():
+for k,v in list(BASAL_ACCUMULATIONS_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items()):
+    for k2 in list(v.keys()):
         if k2 not in ['CO','PM2.5','FDF']:
             v.pop(k2)
 
 TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED = copy.deepcopy(
     TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_EMISSIONS_EXPECTED)
-for k,v in TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items():
-    for k2 in v.keys():
+for k,v in list(TOTAL_BASAL_ACCUMULATIONS_PLUS_LITTER_RX_13_130_DIFFERING_LOOKUP_WHITELIST_CO_PM25_FDF_EMISSIONS_EXPECTED.items()):
+    for k2 in list(v.keys()):
         if k2 not in ['CO','PM2.5','FDF']:
             v.pop(k2)
 
@@ -221,26 +221,26 @@ def assert_results_are_approximately_equal(expected, actual):
     # categories
 
     assert set(expected.keys()) == set(actual.keys())
-    for c in expected.keys():
-        print '- %s' % (c)
+    for c in list(expected.keys()):
+        print('- %s' % (c))
         # sub-categories
         assert set(expected[c].keys()) == set(actual[c].keys())
-        for sc in expected[c].keys():
-            print ' - %s' % (sc)
+        for sc in list(expected[c].keys()):
+            print(' - %s' % (sc))
             # combustion phases
             assert set(expected[c][sc].keys()) == set(actual[c][sc].keys())
-            for cp in expected[c][sc].keys():
-                print '  - %s' % (cp)
+            for cp in list(expected[c][sc].keys()):
+                print('  - %s' % (cp))
                 # chemical species
                 assert set(expected[c][sc][cp].keys()) == set(actual[c][sc][cp].keys())
-                for s in expected[c][sc][cp].keys():
-                    print '   - %s' % (s)
+                for s in list(expected[c][sc][cp].keys()):
+                    print('   - %s' % (s))
                     # emissions values
                     assert len(expected[c][sc][cp][s]) == len(actual[c][sc][cp][s])
-                    for i in xrange(len(expected[c][sc][cp][s])):
-                        print "expected[%s][%s][%s][%s][%s][%s] vs actual[%s][%s][%s][%s][%s][%s]" % (
+                    for i in range(len(expected[c][sc][cp][s])):
+                        print("expected[%s][%s][%s][%s][%s][%s] vs actual[%s][%s][%s][%s][%s][%s]" % (
                             c,sc,cp,s,i,expected[c][sc][cp][s][i],
-                            c,sc,cp,s,i,actual[c][sc][cp][s][i])
+                            c,sc,cp,s,i,actual[c][sc][cp][s][i]))
                         if expected[c][sc][cp][s][i] is None:
                             assert None == actual[c][sc][cp][s][i]
                         else:
