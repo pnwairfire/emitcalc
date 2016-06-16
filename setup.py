@@ -30,7 +30,7 @@ setup(
     description='Package providing a calculator for computing emissions from consume output.',
     install_requires=[
         "pyairfire>=1.1.1",
-        "eflookup>=1.0.0",
+        "eflookup>=1.0.1",
         "numpy==1.8.0"
     ],
     dependency_links=[
