@@ -43,6 +43,36 @@ OPTIONAL_ARGS = [
     }
 ]
 
+EPILOG_STR = """
+
+Examples
+
+    $ echo '{
+        "litter-lichen-moss": {
+            "litter": {
+                "smoldering": [0.14949327591400063, 0.2],
+                "total": [1.4949327591400063, 0.34],
+                "flaming": [1.3454394832260057, 0.14],
+                "residual": [0.0, 0.0]
+            },
+            "lichen": {
+                "smoldering": [0.0, 0.0],
+                "total": [0.0, 0.0],
+                "flaming": [0.0, 0.0],
+                "residual": [0.0, 0.0]
+            },
+            "moss": {
+                "smoldering": [0.0, 0.0],
+                "total": [0.0, 0.0],
+                "flaming": [0.0, 0.0],
+                "residual": [0.0, 0.0]
+            }
+        }
+    }' | emitcalc
+
+
+ """
+
 def _stream(file_name, flag): #, do_strip_newlines):
     if file_name:
         return open(file_name, flag)
@@ -54,7 +84,8 @@ def _stream(file_name, flag): #, do_strip_newlines):
 
 
 if __name__ == "__main__":
-    parser, args = scripting.args.parse_args(REQUIRED_ARGS, OPTIONAL_ARGS)
+    parser, args = scripting.args.parse_args(REQUIRED_ARGS, OPTIONAL_ARGS,
+        epilog=EPILOG_STR)
 
     try:
         data = json.loads(''.join([d for d in _stream(args.input_file, 'r')]))
