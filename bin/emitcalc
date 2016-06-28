@@ -68,7 +68,7 @@ Examples
                 "residual": [0.0, 0.0]
             }
         }
-    }' | emitcalc
+    }' | emitcalc | python -m json.tool | less
 
 
  """
