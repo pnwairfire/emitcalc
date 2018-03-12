@@ -53,6 +53,12 @@ OPTIONAL_ARGS = [
         'short': '-o',
         'long': '--output-file',
         'help': 'output file comtaining JSON formatted consomue output'
+    },
+    {
+        'short': '-s',
+        'long': '--species',
+        'action': 'append',
+        #'default': []
     }
 ]
 
@@ -84,7 +90,7 @@ Examples
     }}' | {script_name} | python -m json.tool | less
 
     $ {script_name} -i ./test/data/truncated-consume-output.json \\
-        -f 52 --rx | python -m json.tool | less
+        -f 52 --rx -s PM2.5 -s CO2| python -m json.tool | less
 
  """.format(script_name=sys.argv[0])
 
@@ -116,7 +122,8 @@ if __name__ == "__main__":
         else:
             # Note: args.rx doesn't come into play
             lookup = FepsEFLookup()
-        calculator = EmissionsCalculator(lookup)
+        calculator = EmissionsCalculator(lookup,
+            species=args.species or [])
         emissions = calculator.calculate(data)
         _stream(args.output_file, 'w').write(json.dumps(emissions))
 
