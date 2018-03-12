@@ -31,7 +31,7 @@ setup(
     description='Package providing a calculator for computing emissions from consume output.',
     install_requires=[
         "pyairfire>=1.1.1,<2.0.0",
-        "eflookup>=1.0.1"
+        "eflookup>=v3.0.1,<4.0.0"
         # Note: numpy must now be installed manually beforehand
         # "numpy"
     ],

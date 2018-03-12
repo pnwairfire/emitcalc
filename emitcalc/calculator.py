@@ -165,7 +165,9 @@ class EmissionsCalculator(object):
                         look_up = self._ef_lookup_object(i)
                         for species in self._output_species_set(i)[phase]:
                             ef = look_up.get(phase=phase,
-                                fuel_category=sub_category, species=species)
+                                fuel_category=category,
+                                fuel_sub_category=sub_category,
+                                species=species)
                             # 'ef' may sometimes be undefined - e.g. for the
                             # 'residual' phase for certain fuel categories
                             if ef:
