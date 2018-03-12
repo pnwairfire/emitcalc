@@ -17,6 +17,7 @@ from pyairfire import scripting
 
 from emitcalc.calculator import EmissionsCalculator
 from eflookup.fepsef import FepsEFLookup
+from eflookup.fccs2ef import Fccs2Ef, CoverType2Ef
 
 # Note: though some argue that all required parameters should be specified as
 # positional arguments, I prefer using 'options' flags, even though this
@@ -26,20 +27,32 @@ REQUIRED_ARGS = []
 
 OPTIONAL_ARGS = [
     {
+        'short': '-f',
+        'long': '--fccs-fuelbed-id',
+        'help': ('FCCS id; if specified, will use Urbanski/Liu '
+            'emissions factors model')
+    },
+    {
+        'short': '-c',
+        'long': '--cover-type-id',
+        'help': ('Covertype id; if specified, will use Urbanski/Liu '
+            'emissions factors model')
+    },
+    {
+        'long': '--rx',
+        'help': "Is a prescribed burn",
+        'action': 'store_true',
+        'default': False
+    },
+    {
         'short': '-i',
         'long': '--input-file',
-        'dest': 'input_file',
-        'help': 'input file comtaining JSON formatted consume output',
-        'action': "store",
-        'default': None
+        'help': 'input file comtaining JSON formatted consume output'
     },
     {
         'short': '-o',
         'long': '--output-file',
-        'dest': 'output_file',
-        'help': 'output file comtaining JSON formatted consomue output',
-        'action': "store",
-        'default': None
+        'help': 'output file comtaining JSON formatted consomue output'
     }
 ]
 
@@ -47,31 +60,33 @@ EPILOG_STR = """
 
 Examples
 
-    $ echo '{
-        "litter-lichen-moss": {
-            "litter": {
+    $ echo '{{
+        "litter-lichen-moss": {{
+            "litter": {{
                 "smoldering": [0.14949327591400063, 0.2],
                 "total": [1.4949327591400063, 0.34],
                 "flaming": [1.3454394832260057, 0.14],
                 "residual": [0.0, 0.0]
-            },
-            "lichen": {
+            }},
+            "lichen": {{
                 "smoldering": [0.0, 0.0],
                 "total": [0.0, 0.0],
                 "flaming": [0.0, 0.0],
                 "residual": [0.0, 0.0]
-            },
-            "moss": {
+            }},
+            "moss": {{
                 "smoldering": [0.0, 0.0],
                 "total": [0.0, 0.0],
                 "flaming": [0.0, 0.0],
                 "residual": [0.0, 0.0]
-            }
-        }
-    }' | emitcalc | python -m json.tool | less
+            }}
+        }}
+    }}' | {script_name} | python -m json.tool | less
 
+    $ {script_name} -i ./test/data/truncated-consume-output.json \\
+        -f 52 --rx | python -m json.tool | less
 
- """
+ """.format(script_name=sys.argv[0])
 
 def _stream(file_name, flag): #, do_strip_newlines):
     if file_name:
@@ -86,10 +101,22 @@ def _stream(file_name, flag): #, do_strip_newlines):
 if __name__ == "__main__":
     parser, args = scripting.args.parse_args(REQUIRED_ARGS, OPTIONAL_ARGS,
         epilog=EPILOG_STR)
+    if args.fccs_fuelbed_id and args.cover_type_id:
+        sys.write("{script_name}: error: `-f'/'--fccs-fuelbed-id' and "
+            "'-c'/'--cover-type-id' can't be specified together.\n".format(
+            script_name=sys.argv[0]))
+        sys.exit(1)
 
     try:
         data = json.loads(''.join([d for d in _stream(args.input_file, 'r')]))
-        calculator = EmissionsCalculator(FepsEFLookup())
+        if args.fccs_fuelbed_id:
+            lookup = Fccs2Ef(args.fccs_fuelbed_id, args.rx)
+        elif args.cover_type_id:
+            lookup = CoverType2Ef(args.cover_type_id, args.rx)
+        else:
+            # Note: args.rx doesn't come into play
+            lookup = FepsEFLookup()
+        calculator = EmissionsCalculator(lookup)
         emissions = calculator.calculate(data)
         _stream(args.output_file, 'w').write(json.dumps(emissions))
 
