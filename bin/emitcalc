@@ -13,8 +13,7 @@ import logging
 import sys
 import traceback
 
-from pyairfire import scripting
-
+import afscripting as scripting
 from emitcalc.calculator import EmissionsCalculator
 from eflookup.fepsef import FepsEFLookup
 from eflookup.fccs2ef import Fccs2Ef, CoverType2Ef
