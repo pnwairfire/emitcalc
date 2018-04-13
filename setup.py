@@ -36,8 +36,8 @@ setup(
         # "numpy"
     ],
     dependency_links=[
-        "https://pypi.smoke.airfire.org/simple/afscripting/"
-        "https://pypi.smoke.airfire.org/simple/eflookup/"
+        "https://pypi.airfire.org/simple/afscripting/"
+        "https://pypi.airfire.org/simple/eflookup/"
     ],
     tests_require=test_requirements
 )
