@@ -28,13 +28,13 @@ OPTIONAL_ARGS = [
     {
         'short': '-f',
         'long': '--fccs-fuelbed-id',
-        'help': ('FCCS id; if specified, will use Urbanski/Liu '
+        'help': ("FCCS id; if specified, will use Prichard/O'Neill "
             'emissions factors model')
     },
     {
         'short': '-c',
         'long': '--cover-type-id',
-        'help': ('Covertype id; if specified, will use Urbanski/Liu '
+        'help': ("Covertype id; if specified, will use Prichard/O'Neill "
             'emissions factors model')
     },
     {
