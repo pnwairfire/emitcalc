@@ -26,7 +26,8 @@ on your platform.
 ### Ubuntu (12.04, 14.04, 16.04)
 
     sudo apt-get install -y python3 python3-dev
-    sudo apt-get install -y python3-numpy
+    pip install Cython
+    pip install numpy
 
 ## Development
 
