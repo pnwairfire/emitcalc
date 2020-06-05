@@ -170,12 +170,13 @@ class EmissionsCalculator(object):
                                 species=species)
                             # 'ef' may sometimes be undefined - e.g. for the
                             # 'residual' phase for certain fuel categories
-                            if ef:
-                                e_sc_dict[phase][species][i] = ef * sc_dict[phase][i]
-                                # logging.debug('%s > %s > %s > %s: %s * %s = %s',
-                                #     category, sub_category, phase,
-                                #     species, ef, sc_dict[phase][i],
-                                #     e_sc_dict[phase][species][i])
+                            # set to zero in these cases
+                            ef = ef or 0.0
+                            e_sc_dict[phase][species][i] = ef * sc_dict[phase][i]
+                            # logging.debug('%s > %s > %s > %s: %s * %s = %s',
+                            #     category, sub_category, phase,
+                            #     species, ef, sc_dict[phase][i],
+                            #     e_sc_dict[phase][species][i])
 
                 e_c_dict[sub_category] = e_sc_dict
             if e_c_dict:
