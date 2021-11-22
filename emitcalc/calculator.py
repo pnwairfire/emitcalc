@@ -175,7 +175,7 @@ class EmissionsCalculator(object):
                             # 'residual' phase for certain fuel categories
                             # set to zero in these cases
                             ef = ef or 0.0
-                            efs_sc_dict[phase][species] = ef # ef will be the same for each fuelbed
+                            efs_sc_dict[phase][species][i] = ef
                             e_sc_dict[phase][species][i] = ef * sc_dict[phase][i]
                             # logging.debug('%s > %s > %s > %s: %s * %s = %s',
                             #     category, sub_category, phase,
