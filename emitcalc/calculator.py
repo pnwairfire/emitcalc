@@ -155,11 +155,14 @@ class EmissionsCalculator(object):
         self._num_fuelbeds = self._num_ef_look_up_objects
         self._prune_and_validate(consumption_dict)
 
+        self.emissions_factors = {}  # for reference by client
         emissions = {}
         for category, c_dict in list(consumption_dict.items()):
             e_c_dict = {}
+            efs_c_dict = {}
             for sub_category, sc_dict in list(c_dict.items()):
                 e_sc_dict = self._initialize_emissions_inner_dict()
+                efs_sc_dict = self._initialize_emissions_inner_dict()
                 for phase, cp_array in list(sc_dict.items()):
                     for i in range(self._num_fuelbeds):
                         look_up = self._ef_lookup_object(i)
@@ -172,6 +175,7 @@ class EmissionsCalculator(object):
                             # 'residual' phase for certain fuel categories
                             # set to zero in these cases
                             ef = ef or 0.0
+                            efs_sc_dict[phase][species] = ef # ef will be the same for each fuelbed
                             e_sc_dict[phase][species][i] = ef * sc_dict[phase][i]
                             # logging.debug('%s > %s > %s > %s: %s * %s = %s',
                             #     category, sub_category, phase,
@@ -179,8 +183,10 @@ class EmissionsCalculator(object):
                             #     e_sc_dict[phase][species][i])
 
                 e_c_dict[sub_category] = e_sc_dict
+                efs_c_dict[sub_category] = efs_sc_dict
             if e_c_dict:
                 emissions[category] = e_c_dict
+                self.emissions_factors[category] = efs_c_dict
 
         emissions['summary'] = self._compute_summary(emissions)
 

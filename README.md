@@ -598,3 +598,13 @@ option.  For example, to only compute CO2 and PM2.5 levels:
 
     >>> ...
     >>> calculator = EmissionsCalculator(look_up, species=['CO2', 'PM2.5'])
+
+#### Emissions Factors
+
+The emissions factors used in the emissions calculations can be referenced
+after executing `calculator.calculate` via member var
+`calculator.emissions_factors`:
+
+    >>> ...
+    >>> calculator.calculate(consume_output)
+    >>> calculator.emissions_factors
