@@ -58,6 +58,17 @@ OPTIONAL_ARGS = [
         'long': '--species',
         'action': 'append',
         #'default': []
+    },
+    {
+        'long': '--output-efs',
+        'action': 'store_true',
+        "help": "Display emissions factors used to calculate the emissions values"
+        #'default': []
+    },
+    {
+        'long': '--indent',
+        'type': int,
+        "help": "Indentation used when dumping json output"
     }
 ]
 
@@ -86,10 +97,10 @@ Examples
                 "residual": [0.0, 0.0]
             }}
         }}
-    }}' | {script_name} | python -m json.tool | less
+    }}' | {script_name} --indent 4 | less
 
     $ {script_name} -i ./test/data/truncated-consume-output.json \\
-        -f 52 --rx -s PM2.5 -s CO2| python -m json.tool | less
+        -f 52 --rx -s PM2.5 -s CO2 --indent 4 | less
 
  """.format(script_name=sys.argv[0])
 
@@ -124,7 +135,10 @@ if __name__ == "__main__":
         calculator = EmissionsCalculator(lookup,
             species=args.species or [])
         emissions = calculator.calculate(data)
-        _stream(args.output_file, 'w').write(json.dumps(emissions))
+        _stream(args.output_file, 'w').write(json.dumps(emissions, indent=args.indent))
+        if args.output_efs:
+            _stream(args.output_file, 'a').write('\n' + json.dumps(
+                calculator.emissions_factors, indent=args.indent))
 
     except Exception as e:
         logging.info(traceback.format_exc())
