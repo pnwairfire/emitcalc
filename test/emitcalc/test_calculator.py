@@ -4,7 +4,7 @@ import copy
 
 from eflookup.lookup import BasicEFLookup
 from numpy.testing import assert_approx_equal
-from py.test import raises#, mark
+from pytest import raises#, mark
 
 from emitcalc.calculator import EmissionsCalculator
 
