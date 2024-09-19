@@ -10,24 +10,7 @@ provisional; use at own risk.***
 ## Python 2 and 3 Support
 
 This package was originally developed to support python 2.7, but has since
-been refactored to support 3.5. Attempts to support both 2.7 and 3.5 have
-been made but are not guaranteed.
-
-## External Dependencies
-
-You'll need the numpy python package.  This used to be
-baked into setup.py, but the version available for install depends
-on your platform.
-
-### Mac
-
-    pip install numpy
-
-### Ubuntu (12.04, 14.04, 16.04)
-
-    sudo apt-get install -y python3 python3-dev
-    pip install Cython
-    pip install numpy
+been refactored to support 3.12.
 
 ## Development
 
